@@ -25,7 +25,8 @@ computer control, smart home integration.
 8. UI polish
 
 ## Current stage
-Stage 1 — building /chat endpoint
+Stage 2 — STT (Whisper). Stage 1 (/chat endpoint) complete and committed;
+adding multi-turn conversation history to /chat before starting STT.
 
 ## Conventions
 - Virtual env in .venv/
