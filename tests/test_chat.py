@@ -28,7 +28,7 @@ def _fake_message(text: str = "Hello back.") -> SimpleNamespace:
 
 
 def test_healthz(client: TestClient) -> None:
-    assert client.get("/healthz").json() == {"status": "ok"}
+    assert client.get("/jarvis/healthz").json() == {"status": "ok"}
 
 
 def test_chat_returns_reply(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -41,7 +41,7 @@ def test_chat_returns_reply(client: TestClient, monkeypatch: pytest.MonkeyPatch)
         messages=SimpleNamespace(create=fake_create)
     ))
 
-    response = client.post("/chat", json={"message": "Hi Jarvis"})
+    response = client.post("/jarvis/chat", json={"message": "Hi Jarvis"})
 
     assert response.status_code == 200
     assert response.json() == {
@@ -53,5 +53,5 @@ def test_chat_returns_reply(client: TestClient, monkeypatch: pytest.MonkeyPatch)
 
 
 def test_chat_rejects_empty_message(client: TestClient) -> None:
-    response = client.post("/chat", json={"message": ""})
+    response = client.post("/jarvis/chat", json={"message": ""})
     assert response.status_code == 422
