@@ -44,7 +44,9 @@ def test_chat_returns_reply(client: TestClient, monkeypatch: pytest.MonkeyPatch)
     response = client.post("/jarvis/chat", json={"message": "Hi Jarvis"})
 
     assert response.status_code == 200
-    assert response.json() == {
+    body = response.json()
+    assert body["session_id"]  # server minted a session id
+    assert {k: v for k, v in body.items() if k != "session_id"} == {
         "reply": "Hello back.",
         "model": "claude-opus-4-7",
         "input_tokens": 10,
@@ -55,3 +57,31 @@ def test_chat_returns_reply(client: TestClient, monkeypatch: pytest.MonkeyPatch)
 def test_chat_rejects_empty_message(client: TestClient) -> None:
     response = client.post("/jarvis/chat", json={"message": ""})
     assert response.status_code == 422
+
+
+def test_chat_remembers_history(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    seen_messages: list[list[dict]] = []
+
+    def fake_create(**kwargs):
+        seen_messages.append(kwargs["messages"])
+        return _fake_message("ack")
+
+    monkeypatch.setattr("app.llm.get_client", lambda: SimpleNamespace(
+        messages=SimpleNamespace(create=fake_create)
+    ))
+
+    first = client.post("/jarvis/chat", json={"message": "remember 42"})
+    sid = first.json()["session_id"]
+    second = client.post(
+        "/jarvis/chat", json={"message": "what number?", "session_id": sid}
+    )
+
+    assert second.json()["session_id"] == sid
+    # Turn 1 sent only the first user message.
+    assert seen_messages[0] == [{"role": "user", "content": "remember 42"}]
+    # Turn 2 sent the full prior conversation plus the new message.
+    assert seen_messages[1] == [
+        {"role": "user", "content": "remember 42"},
+        {"role": "assistant", "content": "ack"},
+        {"role": "user", "content": "what number?"},
+    ]

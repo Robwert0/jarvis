@@ -15,7 +15,7 @@ def get_client() -> anthropic.Anthropic:
     return anthropic.Anthropic(api_key=get_settings().anthropic_api_key)
 
 def chat(
-        message: str,
+        messages: list[MessageParam],
         *,
         system: str | None = None,
         client: anthropic.Anthropic | None = None,
@@ -23,7 +23,6 @@ def chat(
 ) -> anthropic.types.Message:
     client = client or get_client()
     settings = settings or get_settings()
-    messages: list[MessageParam] = [{"role": "user", "content": message}]
 
     return client.messages.create(
         model=settings.anthropic_model,
