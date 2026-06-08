@@ -25,10 +25,20 @@ computer control, smart home integration.
 8. UI polish
 
 ## Current stage
-Stage 2 — STT (Whisper). Stage 1 (/chat endpoint) complete and committed;
-adding multi-turn conversation history to /chat before starting STT.
+Stage 2 — STT (Whisper). Stage 1 (/chat) complete, including multi-turn
+conversation history via an in-memory SessionStore (merged in PR #1).
+Next: add a Whisper transcription endpoint and wire audio -> text -> /chat.
+
+Known deferrals from Stage 1 (revisit when they bite):
+- SessionStore is in-memory only — history is lost on restart, not shared
+  across workers. Swap to SQLite behind the same interface when persistence
+  is needed.
+- No conversation-history trimming; token cost grows per turn.
 
 ## Conventions
 - Virtual env in .venv/
 - Secrets in .env (gitignored)
 - requirements.txt pinned via pip freeze
+- CI (.github/workflows/ci.yml) runs pytest on PRs to main; main is
+  protected and requires the `test` check to pass before merge
+- Merge style: squash (one commit per PR on main)
