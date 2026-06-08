@@ -1,4 +1,4 @@
-name: CI
+name: Jarvis-Test
 
 on:
   pull_request:
