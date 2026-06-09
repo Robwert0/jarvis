@@ -8,6 +8,7 @@ class Settings(BaseSettings):
 
     anthropic_api_key: str
     anthropic_model: str = "claude-haiku-4-5-20251001"
+    whisper_model: str = "small"
     max_tokens: int = 1024
 
 @lru_cache
