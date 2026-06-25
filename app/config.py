@@ -8,8 +8,10 @@ class Settings(BaseSettings):
 
     anthropic_api_key: str
     anthropic_model: str = "claude-haiku-4-5-20251001"
-    whisper_model: str = "small"
     max_tokens: int = 1024
+
+    elevenlabs_api_key: str | None = None
+    elevenlabs_agent_id: str | None = None
 
 @lru_cache
 def get_settings()-> Settings:

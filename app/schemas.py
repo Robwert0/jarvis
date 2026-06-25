@@ -16,8 +16,3 @@ class ChatResponse(BaseModel):
     model: str
     input_tokens: int
     output_tokens: int
-
-class TranscriptionResponse(BaseModel):
-    text: str
-    language: str
-    duration: float
