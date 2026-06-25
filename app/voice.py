@@ -5,6 +5,7 @@ from elevenlabs.conversational_ai.conversation import Conversation
 from elevenlabs.conversational_ai.default_audio_interface import DefaultAudioInterface
 
 from app.config import get_settings
+from app.tools import build_client_tools
 
 
 def main() -> None:
@@ -21,6 +22,7 @@ def main() -> None:
         settings.elevenlabs_agent_id,
         requires_auth=True,
         audio_interface=DefaultAudioInterface(),
+        client_tools=build_client_tools(),
         callback_user_transcript=lambda text: print(f"You:    {text}"),
         callback_agent_response=lambda text: print(f"Jarvis: {text}"),
     )
