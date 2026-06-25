@@ -25,7 +25,8 @@ Revised 2026-06-15 after the ElevenLabs-owns-the-voice-loop pivot (see
 1. HTTP /chat endpoint (text-in, text-out via Claude) — done, kept as text
    fallback / future custom-LLM proxy
 2. Stand up an ElevenLabs Agent with Claude as the LLM (voice loop working
-   end-to-end with a basic prompt, no actions yet)
+   end-to-end with a basic prompt, no actions yet) — done (PR #6); `app/voice.py`
+   runs the loop, verified mic -> STT -> Claude -> TTS -> speaker
 3. Local client-tool executor (Python SDK); first tool: open_app
 4. Composite actions / macros (open_work_environment)
 5. Interruption-vs-in-flight-action spike + cancellation handling
@@ -34,9 +35,10 @@ Revised 2026-06-15 after the ElevenLabs-owns-the-voice-loop pivot (see
 8. UI polish
 
 ## Current stage
-Stage 2 — stand up the ElevenLabs Agent with Claude as its LLM. Stage 1 (/chat)
-complete, including multi-turn conversation history via an in-memory
-SessionStore (merged in PR #1).
+Stage 3 — local client-tool executor. Stage 2 complete (PR #6): the ElevenLabs
+Agent runs with Claude as its LLM and the voice loop works end-to-end via
+`app/voice.py` (mic -> STT -> Claude -> TTS -> speaker). Stage 1 (/chat) complete,
+including multi-turn conversation history via an in-memory SessionStore (PR #1).
 
 First concrete step before building the executor: run the interruption spike
 from `docs/voice-architecture.md` (barge in during a slow client tool, observe
