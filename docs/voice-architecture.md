@@ -42,7 +42,7 @@ makes Jarvis *Jarvis*: Claude orchestrating real actions on the local machine.
 | Claude as the agent LLM | ✅ Confirmed | Anthropic models (Claude Sonnet 4, 3.7 Sonnet) selectable natively in LLM settings. Custom LLM endpoint (proxy → Anthropic API) available as an escape hatch. |
 | Local execution via client tools | ✅ Confirmed | Client tools run locally via the SDK, registered in code. Python is first-class (`ClientTools().register(...)`). **No public webhook/tunnel needed** — run the SDK on the machine to control. |
 | Barge-in / turn-taking | ✅ Confirmed | Turn-taking model (Eager/Normal/Patient) + silence threshold. `interruption` is a subscribable client event, so the local code is notified on barge-in. |
-| Interrupt vs **in-flight action** | ⚠️ **Unconfirmed** | Docs confirm the agent stops *speaking* on interruption but do NOT specify what happens to a half-run client tool. **This is the first thing to spike.** |
+| Interrupt vs **in-flight action** | ✅ **Confirmed (spike, 2026-06-29)** | The SDK does **not** cancel a running client tool on barge-in or "stop" — it runs to completion and still returns its result. `handle_interruption()` only flushes buffered audio. Cancellation is entirely our job, and must be LLM-driven. See "Spike results" below. |
 
 Sources:
 - Models / LLM settings — https://elevenlabs.io/docs/agents-platform/customization/llm
@@ -94,11 +94,46 @@ adds a hand-off, latency, and two prompts to maintain.
   completion, not the intended plan, or Claude's next turn reasons on a wrong
   world state.
 
-## Open question to spike first
-Start a deliberately slow client tool, barge in mid-execution, and observe what
-fires and in what order (`interruption` event timing, whether the tool result is
-still awaited, whether a second tool call can arrive while the first runs). This
-single test de-risks the whole interruption design.
+## Spike results (resolved 2026-06-29)
+Ran a deliberately slow client tool (`slow_action`, 8s of 0.5s ticks) via a
+throwaway harness (`spike_interruption.py`), barged in mid-execution, and logged
+every callback with timestamps. Findings:
+
+1. **The SDK does not cancel an in-flight client tool.** On both an explicit
+   "stop" turn *and* a true over-speech barge-in, all 16 ticks ran to completion
+   and the result was still returned to the agent. `handle_interruption()`
+   (conversation.py) only flushes buffered *audio* via `audio_interface.interrupt()`;
+   it never touches running tools and invokes no user callback.
+2. **Audio-interruption and action-cancellation are unrelated channels.**
+   `callback_agent_response_correction` fires *only* when the user talks over
+   **active TTS**, and only truncates the spoken text. When the agent is silent
+   during a long action, saying "stop" produces an ordinary user turn and **no**
+   interruption event. So correction is not a usable cancel signal.
+3. **The LLM will lie about cancellation.** The agent said *"No problem, I've
+   stopped it"* while the tool kept running ~5 more seconds. The conversation
+   layer has no knowledge of — or power over — the running action.
+4. **Conversation and tools run concurrently** on separate threads (ClientTools
+   uses its own ThreadPoolExecutor + event loop); the agent produced full spoken
+   turns while ticks kept printing.
+
+**Design consequence — cancellation must be LLM-driven.** Claude classifies a
+"stop" as cancel intent and calls an explicit `cancel_action` client tool that
+flips a cancel flag the running task polls between steps (the cancel-token
+primitive above). Long tools must poll that flag **cooperatively** — a blocking
+`sleep`/subprocess can't be cancelled mid-call. The tool result must report
+*real* partial progress so the agent stops claiming false completions.
+
+**Implemented (Stage 4).** `app/cancellation.py` holds a `CancelToken` and a
+single "current operation" slot (`begin()`/`current()`/`end()`, guarded by a
+lock). `cancel_action` in `app/tools.py` reads the current token, cancels it,
+waits for it to actually stop, and returns the truthful partial-progress string
+— `cancel_action` deliberately blocks on the stop so the result it hands back is
+the agent's source of truth (it can't speak until the result returns). Verified
+live: "stop" mid-`slow_action` halted it at tick 7 and the agent said "Stopped
+after seven of sixteen steps." — the exact inverse of the failure above. Limits:
+single in-flight action only (concurrent actions need a `tool_call_id`-keyed
+registry — `begin()` warns when the limit is exceeded); dormant in production
+until Stage 5 adds a long-running action to cancel.
 
 ## Impact on the old roadmap
 This pivot obsoletes several previously planned stages:

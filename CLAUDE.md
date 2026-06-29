@@ -27,22 +27,40 @@ Revised 2026-06-15 after the ElevenLabs-owns-the-voice-loop pivot (see
 2. Stand up an ElevenLabs Agent with Claude as the LLM (voice loop working
    end-to-end with a basic prompt, no actions yet) — done (PR #6); `app/voice.py`
    runs the loop, verified mic -> STT -> Claude -> TTS -> speaker
-3. Local client-tool executor (Python SDK); first tool: open_app
-4. Composite actions / macros (open_work_environment)
-5. Interruption-vs-in-flight-action spike + cancellation handling
+3. Local client-tool executor (Python SDK); first tool: open_app — done
+   (PR #8); result round-trips back to the agent, failure path verified
+4. Interruption-vs-in-flight-action spike + cancellation handling — done;
+   spike confirmed the SDK won't cancel in-flight tools, so cancellation is
+   LLM-driven via a `cancel_action` tool + cooperative cancel token
+5. Composite actions / macros (open_work_environment) — first real consumer
+   of the cancel token
 6. More tools (search_web, smart home, etc.)
 7. Wake word activation (evaluate ElevenLabs vs Porcupine)
 8. UI polish
 
 ## Current stage
-Stage 3 — local client-tool executor. Stage 2 complete (PR #6): the ElevenLabs
-Agent runs with Claude as its LLM and the voice loop works end-to-end via
-`app/voice.py` (mic -> STT -> Claude -> TTS -> speaker). Stage 1 (/chat) complete,
-including multi-turn conversation history via an in-memory SessionStore (PR #1).
+Stage 5 — composite actions / macros. Stage 4 complete: the interruption spike
+(see `docs/voice-architecture.md` "Spike results") confirmed the ElevenLabs SDK
+does not cancel an in-flight client tool, so cancellation is LLM-driven — the
+agent calls a `cancel_action` client tool that flips a shared cancel token
+(`app/cancellation.py`), which long-running tools poll cooperatively between
+steps and report real partial progress. Verified live: "stop" mid-action halts
+the tool early and the agent truthfully reports how far it got. The cancel
+machinery is wired into `voice.py` via `build_client_tools()` but dormant until
+Stage 5 adds a long-running action to cancel (`open_app` is too fast to need it).
 
-First concrete step before building the executor: run the interruption spike
-from `docs/voice-architecture.md` (barge in during a slow client tool, observe
-what fires) — it de-risks the whole action-cancellation design.
+Stage 3 complete (PR #8): `open_app` executes on-device and its result
+round-trips back to the agent. Stage 2 complete (PR #6): ElevenLabs Agent runs
+with Claude as its LLM, voice loop works end-to-end via `app/voice.py`. Stage 1
+(/chat) complete, with multi-turn history via an in-memory SessionStore (PR #1).
+
+Stage 5 design note: `open_work_environment` is the first real cancellable
+macro. Build it as a loop with poll points between steps (check the cancel token
+between each app launch), record per-step progress, and make steps idempotent so
+an interrupted-then-rerun macro doesn't double-launch. When a second concurrent
+cancellable action appears, the single-slot cancel token (one `_current`) becomes
+a `tool_call_id`-keyed registry — `app/cancellation.py`'s `begin()` prints a
+warning the moment that limit is exceeded.
 
 Known deferrals from Stage 1 (revisit when they bite):
 - SessionStore is in-memory only — history is lost on restart, not shared

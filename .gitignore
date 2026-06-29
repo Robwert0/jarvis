@@ -18,3 +18,6 @@ __pycache__/
 
 #Claude
 .claude/*local*
+
+# Throwaway spike harness (Stage 4 interruption experiment — not shipped)
+spike_interruption.py
