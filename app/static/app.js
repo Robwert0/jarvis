@@ -33,17 +33,22 @@ function speak(text) {
 
 async function send(message) {
   addMessage("user", message);
-  const res = await fetch("/jarvis/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, session_id: sessionId }),
-  });
-  const data = await res.json();
-  sessionId = data.session_id;
-  addChips(data.actions);
-  addMessage("assistant", data.reply);
-  speak(data.reply);
-  refreshSidebar();
+  try {
+    const res = await fetch("/jarvis/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, session_id: sessionId }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    sessionId = data.session_id;
+    addChips(data.actions);
+    addMessage("assistant", data.reply);
+    speak(data.reply);
+    refreshSidebar();
+  } catch (err) {
+    addMessage("assistant", `[Error: ${err.message}]`);
+  }
 }
 
 form.addEventListener("submit", (e) => {
@@ -60,23 +65,27 @@ document.getElementById("new-chat").addEventListener("click", () => {
 });
 
 async function refreshSidebar() {
-  const convs = await (await fetch("/jarvis/conversations")).json();
-  const ul = document.getElementById("conversations");
-  ul.innerHTML = "";
-  for (const c of convs) {
-    const li = document.createElement("li");
-    li.textContent = c.title || "(untitled)";
-    if (c.id === sessionId) li.classList.add("active");
-    li.addEventListener("click", () => openConversation(c.id));
-    ul.appendChild(li);
-  }
-  const mems = await (await fetch("/jarvis/memories")).json();
-  const mu = document.getElementById("memories");
-  mu.innerHTML = "";
-  for (const m of mems) {
-    const li = document.createElement("li");
-    li.textContent = m;
-    mu.appendChild(li);
+  try {
+    const convs = await (await fetch("/jarvis/conversations")).json();
+    const ul = document.getElementById("conversations");
+    ul.innerHTML = "";
+    for (const c of convs) {
+      const li = document.createElement("li");
+      li.textContent = c.title || "(untitled)";
+      if (c.id === sessionId) li.classList.add("active");
+      li.addEventListener("click", () => openConversation(c.id));
+      ul.appendChild(li);
+    }
+    const mems = await (await fetch("/jarvis/memories")).json();
+    const mu = document.getElementById("memories");
+    mu.innerHTML = "";
+    for (const m of mems) {
+      const li = document.createElement("li");
+      li.textContent = m;
+      mu.appendChild(li);
+    }
+  } catch (err) {
+    console.error("refreshSidebar failed:", err);
   }
 }
 
@@ -94,6 +103,7 @@ if (SR) {
   const recog = new SR();
   recog.lang = "en-US";
   micBtn.addEventListener("click", () => {
+    if (micBtn.classList.contains("listening")) return;
     micBtn.classList.add("listening");
     recog.start();
   });
