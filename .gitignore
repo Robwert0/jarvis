@@ -21,3 +21,6 @@ __pycache__/
 
 # Throwaway spike harness (Stage 4 interruption experiment — not shipped)
 spike_interruption.py
+
+# Macro store (user data)
+macros.db
