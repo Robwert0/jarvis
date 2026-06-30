@@ -1,5 +1,12 @@
 # Jarvis Project Context
 
+## Status — parked at Stage 5 #1 (2026-06-30)
+Working checkpoint, not abandoned. **Built and shipped:** Stages 1–4 plus Stage 5
+sub-project #1 (voice-driven, cancellable app-launching macros). Everything below
+Stage 5 #1 in the roadmap — the management API/UI (#2/#3), Stage 8's multi-user
+app, and the cross-cutting rigor tracks (auth, DB schema, observability, eval
+harness) — is **planned, not built**. Read the roadmap as intent, not inventory.
+
 ## Goal
 Personal AI assistant inspired by Iron Man's Jarvis: voice interaction,
 computer control, smart home integration.
@@ -84,19 +91,22 @@ Companion project (own brainstorm, parked): a CV site with an AI chatbot over
 alongside Jarvis's action-taking depth.
 
 ## Current stage
-Stage 5 — composite actions / macros, sub-project #1 (storage + cancellable
-runner) **code complete, 46 tests green** on `feature/macro-runner`; the only
-remaining step is live voice acceptance on Robert's machine (ElevenLabs
-dashboard wiring + mic test — see the macro plan's Task 5). What shipped:
-`app/macro_store.py` (SQLite behind a small interface), a `LaunchResult` refactor
-of `app/launcher.py` + a best-effort `is_running`, `app/macros.py` (the
-cancellable run-loop with the idempotency hybrid: skip if `is_running` OR
-launched within a 120s recency window, biased to launch when unsure), and a thin
-`run_macro` client tool. This is the **first real consumer of the Stage 4 cancel
-token** — the run-loop polls `token.cancelled` between app launches and keeps
-`token.set_progress()` a speakable cumulative summary. Sub-projects #2 (backend
-management API) and #3 (frontend macro UI) remain, each with its own spec→plan
-→build cycle.
+**Parked at Stage 5 #1 (merged, PR #10).** Stage 5 — composite actions / macros,
+sub-project #1 (storage + cancellable runner) shipped: `app/macro_store.py`
+(SQLite behind a small interface), a `LaunchResult` refactor of `app/launcher.py`
++ a best-effort `is_running` (and path-style AppID launching for desktop apps like
+JetBrains IDEs), `app/macros.py` (the cancellable run-loop with the idempotency
+hybrid: skip if `is_running` OR launched within a 120s recency window, biased to
+launch when unsure; supports per-app launch args like Chrome `--profile-directory`
+via `{"app":..., "args":[...]}` entries), and a thin `run_macro` client tool. This
+is the **first real consumer of the Stage 4 cancel token** — the run-loop polls
+`token.cancelled` between app launches and keeps `token.set_progress()` a speakable
+cumulative summary. 51 tests green; proven live via the Python path.
+
+Sub-projects #2 (backend management API) and #3 (frontend macro UI) were
+**deliberately not pursued** — the project is parked here. The only step left for a
+full voice demo is the ElevenLabs dashboard wiring + mic acceptance for `run_macro`
+(config, not code; see the macro plan's Task 5).
 
 Stage 4 complete: the interruption spike (see `docs/voice-architecture.md`
 "Spike results") confirmed the ElevenLabs SDK does not cancel an in-flight client
