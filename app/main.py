@@ -1,5 +1,7 @@
 import anthropic
 from fastapi import FastAPI, Depends, HTTPException, APIRouter
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 
 from app.config import Settings, get_settings
 from app.agent import run_agent
@@ -66,3 +68,9 @@ def list_memories_endpoint() -> list[str]:
 
 
 app.include_router(router)
+
+app.mount(
+    "/",
+    StaticFiles(directory=Path(__file__).parent / "static", html=True),
+    name="static",
+)

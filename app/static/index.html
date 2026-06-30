@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Jarvis</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <aside id="sidebar">
+    <button id="new-chat">+ New chat</button>
+    <ul id="conversations"></ul>
+    <section id="memory">
+      <h3>🧠 Jarvis remembers</h3>
+      <ul id="memories"></ul>
+    </section>
+  </aside>
+  <main>
+    <div id="transcript"></div>
+    <form id="composer">
+      <input id="message" autocomplete="off" placeholder="Type or press 🎤…" />
+      <button type="button" id="mic" title="Speak">🎤</button>
+      <button type="submit">Send</button>
+    </form>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>

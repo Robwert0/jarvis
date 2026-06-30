@@ -1,0 +1,18 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, sans-serif; display: flex; height: 100vh; }
+#sidebar { width: 260px; border-right: 1px solid #ddd; padding: 12px; overflow-y: auto; }
+#sidebar button { width: 100%; padding: 8px; margin-bottom: 8px; cursor: pointer; }
+#conversations, #memories { list-style: none; padding: 0; margin: 0; }
+#conversations li { padding: 6px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+#conversations li:hover, #conversations li.active { background: #eef; }
+#memory { margin-top: 16px; font-size: 13px; color: #555; }
+main { flex: 1; display: flex; flex-direction: column; }
+#transcript { flex: 1; overflow-y: auto; padding: 16px; }
+.msg { margin: 8px 0; padding: 8px 12px; border-radius: 10px; max-width: 70%; white-space: pre-wrap; }
+.msg.user { background: #d6e4ff; margin-left: auto; }
+.msg.assistant { background: #f0f0f0; }
+.chips { margin: 4px 0 12px; }
+.chip { display: inline-block; background: #e8f5e9; border: 1px solid #c8e6c9; border-radius: 12px; padding: 2px 8px; font-size: 12px; margin-right: 4px; }
+#composer { display: flex; gap: 8px; padding: 12px; border-top: 1px solid #ddd; }
+#message { flex: 1; padding: 10px; }
+#mic.listening { background: #ffcdd2; }
