@@ -1,6 +1,7 @@
 from elevenlabs.conversational_ai.conversation import ClientTools
 from app.launcher import launch
 from app.cancellation import current
+from app import macros
 import time
 
 CANCEL_WAIT_TIMEOUT = 5.0
@@ -27,8 +28,13 @@ def cancel_action(params):
     return "Cancellation requested, but it hasn't stopped yet."
 
 
+def run_macro(params):
+    return macros.run((params or {}).get("macro", "").strip())
+
+
 def build_client_tools():
     tools = ClientTools()
     tools.register("open_app", open_app)
     tools.register("cancel_action", cancel_action)
+    tools.register("run_macro", run_macro)
     return tools
