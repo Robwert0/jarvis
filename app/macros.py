@@ -43,6 +43,14 @@ def _recently(app, now):
     return ts is not None and (now() - ts) < RECENCY_WINDOW
 
 
+def _entry(item):
+    """Normalize a macro entry into (app_name, args). Entries are either a bare
+    string ("Slack") or a dict {"app": ..., "args": [...]}."""
+    if isinstance(item, dict):
+        return item.get("app", ""), item.get("args") or []
+    return item, []
+
+
 def run(name, *, store=macro_store, launcher=None, now=time.monotonic):
     if launcher is None:
         launcher = get_launcher()
@@ -58,13 +66,14 @@ def run(name, *, store=macro_store, launcher=None, now=time.monotonic):
     token = begin()
     opened, skipped, not_found = [], [], []
     try:
-        for app in apps:
+        for item in apps:
             if token.cancelled:
                 break
+            app, args = _entry(item)
             if launcher.is_running(app) or _recently(app, now):
                 skipped.append(app)
             else:
-                result = launcher.launch(app)
+                result = launcher.launch(app, args)
                 if result.ok:
                     opened.append(app)
                     _recently_launched[app] = now()

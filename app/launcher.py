@@ -12,6 +12,12 @@ class LaunchResult:
     message: str
 
 
+def _ps_args(args):
+    """Render args as a PowerShell -ArgumentList value: comma-separated,
+    single-quoted tokens (internal single quotes doubled, per PowerShell)."""
+    return ",".join("'" + a.replace("'", "''") + "'" for a in args)
+
+
 def detect_platform():
     proc_version = Path("/proc/version")
     if proc_version.exists() and "microsoft" in proc_version.read_text().lower():
@@ -54,7 +60,7 @@ class WindowsLauncher:
             return by_lower[close[0]]
         return None
 
-    def launch(self, name):
+    def launch(self, name, args=None):
         app_name = name.strip().lower()
         resolved = self._resolve(name)
         if resolved is None:
@@ -68,13 +74,14 @@ class WindowsLauncher:
                 False, f"I couldn't find an app called {app_name}. {hint}"
             )
         display_name, appid = resolved
+        if args:
+            # shell:AppsFolder can't take arguments; launch the executable by its
+            # AppID (App Paths resolves desktop apps like Chrome) with -ArgumentList.
+            command = f'Start-Process -FilePath "{appid}" -ArgumentList {_ps_args(args)}'
+        else:
+            command = f'Start-Process "shell:AppsFolder\\{appid}"'
         res = subprocess.run(
-            [
-                "powershell.exe",
-                "-NoProfile",
-                "-Command",
-                f'Start-Process "shell:AppsFolder\\{appid}"',
-            ],
+            ["powershell.exe", "-NoProfile", "-Command", command],
             capture_output=True,
             text=True,
         )
@@ -113,11 +120,11 @@ def get_launcher():
     return _launcher
 
 
-def launch(app):
+def launch(app, args=None):
     launcher = get_launcher()
     if launcher is None:
         return LaunchResult(False, "Opening apps isn't wired up on this platform yet.")
-    return launcher.launch(app)
+    return launcher.launch(app, args)
 
 
 def is_running(app):

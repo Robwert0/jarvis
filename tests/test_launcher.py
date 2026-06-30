@@ -157,6 +157,27 @@ def test_launch_reports_powershell_failure(monkeypatch: pytest.MonkeyPatch) -> N
     assert result.message == "I couldn't open photos - boom."
 
 
+def test_launch_with_args_uses_argumentlist(fake_run: FakeRun) -> None:
+    # An app launched with args goes via Start-Process -FilePath <AppID>
+    # -ArgumentList ... (App Paths resolves the AppID), not shell:AppsFolder.
+    result = launcher.WindowsLauncher().launch(
+        "chrome", ["--profile-directory=Profile 1"]
+    )
+    assert result.ok is True
+    assert result.message == "Opening Google Chrome."
+    cmd = fake_run.launch_commands[0]
+    assert "Start-Process -FilePath" in cmd
+    assert APPS[2]["AppID"] in cmd                  # "Chrome.AppID" (the resolved AppID)
+    assert "--profile-directory=Profile 1" in cmd
+    assert "shell:AppsFolder" not in cmd
+
+
+def test_launch_no_args_still_uses_appsfolder(fake_run: FakeRun) -> None:
+    launcher.WindowsLauncher().launch("photos")
+    assert "shell:AppsFolder" in fake_run.launch_commands[0]
+    assert "-ArgumentList" not in fake_run.launch_commands[0]
+
+
 # --- WindowsLauncher.is_running ---------------------------------------------
 
 def test_is_running_true_when_window_title_matches(fake_run: FakeRun) -> None:

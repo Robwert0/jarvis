@@ -31,12 +31,14 @@ class FakeLauncher:
         self.fail = set(fail)
         self.cancel_after = cancel_after
         self.launched = []
+        self.launched_args = []
 
     def is_running(self, app):
         return app in self.running
 
-    def launch(self, app):
+    def launch(self, app, args=None):
         self.launched.append(app)
+        self.launched_args.append(args or [])
         if self.cancel_after and len(self.launched) >= self.cancel_after:
             c.current().cancel()
         ok = app not in self.fail
@@ -104,3 +106,22 @@ def test_recency_window_expired_relaunches():
     fl = FakeLauncher()
     run("work", FakeStore({"work": ["Code"]}), fl, now=lambda: 1200.0)  # 200s later (> 120)
     assert fl.launched == ["Code"]
+
+
+def test_dict_entry_passes_args_to_launcher():
+    fl = FakeLauncher()
+    entry = {"app": "Google Chrome", "args": ["--profile-directory=Profile 1"]}
+    summary = run("work", FakeStore({"work": ["Code", entry]}), fl)
+    assert fl.launched == ["Code", "Google Chrome"]
+    assert fl.launched_args == [[], ["--profile-directory=Profile 1"]]
+    assert "Google Chrome" in summary
+
+
+def test_dict_entry_name_used_for_running_and_summary():
+    # is_running / skip is keyed by the entry's app name, not the dict.
+    fl = FakeLauncher(running=["Google Chrome"])
+    entry = {"app": "Google Chrome", "args": ["--profile-directory=Profile 1"]}
+    summary = run("work", FakeStore({"work": [entry]}), fl)
+    assert fl.launched == []                       # already running -> skipped
+    assert "Google Chrome" in summary
+    assert "already running" in summary.lower()
