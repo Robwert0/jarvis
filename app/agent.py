@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 
 from app import llm, memory_store, tools
@@ -71,7 +72,7 @@ class ActionEvent:
 @dataclass
 class AgentResult:
     reply: str
-    actions: list = field(default_factory=list)
+    actions: list[ActionEvent] = field(default_factory=list)
     model: str = ""
     input_tokens: int = 0
     output_tokens: int = 0
@@ -85,7 +86,7 @@ def _system(memories):
     return system
 
 
-def run_agent(history, user_message, *, memories=(), settings=None, client=None, max_steps=8):
+def run_agent(history, user_message, *, memories: Sequence[str] = (), settings=None, client=None, max_steps=8):
     settings = settings or llm.get_settings()
     client = client or llm.get_client()
     system = _system(memories)
@@ -112,10 +113,14 @@ def run_agent(history, user_message, *, memories=(), settings=None, client=None,
         for block in resp.content:
             if getattr(block, "type", None) != "tool_use":
                 continue
-            try:
-                result = DISPATCH[block.name](dict(block.input))
-            except Exception as exc:  # unknown tool / tool error -> recoverable
-                result = f"Tool {block.name} failed: {exc}"
+            fn = DISPATCH.get(block.name)
+            if fn is None:
+                result = f"Unknown tool: {block.name}"
+            else:
+                try:
+                    result = fn(dict(block.input))
+                except Exception as exc:
+                    result = f"Tool {block.name} raised an error: {exc}"
             actions.append(ActionEvent(block.name, dict(block.input), result))
             results.append(
                 {"type": "tool_result", "tool_use_id": block.id, "content": result}

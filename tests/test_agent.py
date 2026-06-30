@@ -89,7 +89,8 @@ def test_memories_injected_into_system_prompt():
     assert "likes tea" in client.calls[0]["system"]
 
 
-def test_max_steps_caps_tool_loop():
+def test_max_steps_caps_tool_loop(monkeypatch):
+    monkeypatch.setitem(agent.DISPATCH, "open_app", lambda p: "ok")
     # Always returns tool_use -> loop must terminate by max_steps.
     client = FakeClient([_tool_use("open_app", {"app": "x"})] * 10)
     result = agent.run_agent([], "loop", settings=_settings(), client=client, max_steps=3)
