@@ -24,3 +24,10 @@ spike_interruption.py
 
 # Macro store (user data)
 macros.db
+
+# App DB (conversations + memory, user data)
+jarvis.db
+
+# Process artifacts — kept local, not in commits/PRs
+docs/superpowers/
+.superpowers/

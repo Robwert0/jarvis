@@ -8,7 +8,24 @@ class ChatRequest(BaseModel):
     session_id: str | None = Field(
         default=None, description="Existing conversation id; omit to start a new one"
     )
-    system : str | None = Field(default=None, description="Optional system prompt override")
+    system: str | None = Field(default=None, description="Optional system prompt override")
+
+
+class ActionView(BaseModel):
+    tool: str
+    summary: str
+
+
+class ConversationSummary(BaseModel):
+    id: str
+    title: str
+    updated_at: str
+
+
+class Message(BaseModel):
+    role: str
+    content: str
+
 
 class ChatResponse(BaseModel):
     reply: str
@@ -16,3 +33,4 @@ class ChatResponse(BaseModel):
     model: str
     input_tokens: int
     output_tokens: int
+    actions: list[ActionView] = []
