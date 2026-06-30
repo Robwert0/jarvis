@@ -158,8 +158,6 @@ def test_launch_reports_powershell_failure(monkeypatch: pytest.MonkeyPatch) -> N
 
 
 def test_launch_with_args_uses_argumentlist(fake_run: FakeRun) -> None:
-    # An app launched with args goes via Start-Process -FilePath <AppID>
-    # -ArgumentList ... (App Paths resolves the AppID), not shell:AppsFolder.
     result = launcher.WindowsLauncher().launch(
         "chrome", ["--profile-directory=Profile 1"]
     )
@@ -167,7 +165,7 @@ def test_launch_with_args_uses_argumentlist(fake_run: FakeRun) -> None:
     assert result.message == "Opening Google Chrome."
     cmd = fake_run.launch_commands[0]
     assert "Start-Process -FilePath" in cmd
-    assert APPS[2]["AppID"] in cmd                  # "Chrome.AppID" (the resolved AppID)
+    assert APPS[2]["AppID"] in cmd
     assert "--profile-directory=Profile 1" in cmd
     assert "shell:AppsFolder" not in cmd
 
@@ -181,8 +179,6 @@ def test_launch_no_args_still_uses_appsfolder(fake_run: FakeRun) -> None:
 def test_launch_path_appid_uses_filepath(
     fake_run: FakeRun, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # Desktop apps (e.g. JetBrains IDEs) have a raw .exe path as their AppID;
-    # shell:AppsFolder only handles AUMIDs, so a path must go via -FilePath.
     win = launcher.WindowsLauncher()
     monkeypatch.setattr(
         win, "_resolve", lambda n: ("PyCharm 2025.3.3", r"D:\JB\PyCharm\bin\pycharm64.exe")

@@ -6,7 +6,7 @@ from app.cancellation import begin, end
 from app.launcher import get_launcher
 
 RECENCY_WINDOW = 120.0
-_recently_launched = {}    # app name -> monotonic launch time
+_recently_launched = {}
 
 
 def _join(names):
@@ -44,8 +44,7 @@ def _recently(app, now):
 
 
 def _entry(item):
-    """Normalize a macro entry into (app_name, args). Entries are either a bare
-    string ("Slack") or a dict {"app": ..., "args": [...]}."""
+    """A macro entry is "Slack" or {"app": ..., "args": [...]}; return (app, args)."""
     if isinstance(item, dict):
         return item.get("app", ""), item.get("args") or []
     return item, []
