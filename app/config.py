@@ -16,5 +16,5 @@ class Settings(BaseSettings):
     picovoice_access_key: str | None = None
 
 @lru_cache
-def get_settings()-> Settings:
+def get_settings() -> Settings:
     return Settings()

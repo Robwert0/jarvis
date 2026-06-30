@@ -8,8 +8,9 @@ from app.voice import run_session
 def listen_loop(*, access_key, keyword="jarvis", run=run_session,
                 porcupine_factory=pvporcupine.create, recorder_factory=PvRecorder):
     porcupine = porcupine_factory(access_key=access_key, keywords=[keyword])
-    recorder = recorder_factory(frame_length=porcupine.frame_length, device_index=-1)
+    recorder = None
     try:
+        recorder = recorder_factory(frame_length=porcupine.frame_length, device_index=-1)
         recorder.start()
         while True:
             if porcupine.process(recorder.read()) >= 0:
@@ -19,7 +20,8 @@ def listen_loop(*, access_key, keyword="jarvis", run=run_session,
     except KeyboardInterrupt:
         pass
     finally:
-        recorder.delete()
+        if recorder is not None:
+            recorder.delete()
         porcupine.delete()
 
 

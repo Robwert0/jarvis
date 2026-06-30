@@ -50,5 +50,5 @@ def test_wake_triggers_run_and_cleans_up():
     )
 
     assert calls == [1]                    # ran exactly once on the wake
-    assert "stop" in rec.events            # recorder paused for the session
+    assert rec.events == ["start", "stop"] # exact sequence: start, detect, stop before run
     assert porc.deleted and rec.deleted    # resources released in finally
