@@ -13,7 +13,7 @@ def open_app(params):
     start = time.perf_counter()
     result = launch(app)
     print(f"[open_app] took {time.perf_counter() - start:.2f}s -> {result!r}")
-    return result
+    return result.message
 
 
 def cancel_action(params):
