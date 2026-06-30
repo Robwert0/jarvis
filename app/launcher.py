@@ -18,6 +18,13 @@ def _ps_args(args):
     return ",".join("'" + a.replace("'", "''") + "'" for a in args)
 
 
+def _is_path(appid):
+    """Get-StartApps returns either an AppUserModelID (e.g. Slack's
+    'com.tinyspeck...!Slack') or a raw .exe path (e.g. JetBrains IDEs). Only the
+    former works via shell:AppsFolder; a path must be launched with -FilePath."""
+    return ":\\" in appid or appid.lower().endswith(".exe")
+
+
 def detect_platform():
     proc_version = Path("/proc/version")
     if proc_version.exists() and "microsoft" in proc_version.read_text().lower():
@@ -74,10 +81,12 @@ class WindowsLauncher:
                 False, f"I couldn't find an app called {app_name}. {hint}"
             )
         display_name, appid = resolved
-        if args:
-            # shell:AppsFolder can't take arguments; launch the executable by its
-            # AppID (App Paths resolves desktop apps like Chrome) with -ArgumentList.
-            command = f'Start-Process -FilePath "{appid}" -ArgumentList {_ps_args(args)}'
+        if args or _is_path(appid):
+            # shell:AppsFolder can't take arguments and can't launch a raw .exe
+            # path, so launch via -FilePath (App Paths resolves bare names like
+            # "Chrome"; a path is used directly). Append -ArgumentList if any.
+            arg_list = f" -ArgumentList {_ps_args(args)}" if args else ""
+            command = f'Start-Process -FilePath "{appid}"{arg_list}'
         else:
             command = f'Start-Process "shell:AppsFolder\\{appid}"'
         res = subprocess.run(

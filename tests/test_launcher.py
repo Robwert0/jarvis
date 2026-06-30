@@ -178,6 +178,24 @@ def test_launch_no_args_still_uses_appsfolder(fake_run: FakeRun) -> None:
     assert "-ArgumentList" not in fake_run.launch_commands[0]
 
 
+def test_launch_path_appid_uses_filepath(
+    fake_run: FakeRun, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Desktop apps (e.g. JetBrains IDEs) have a raw .exe path as their AppID;
+    # shell:AppsFolder only handles AUMIDs, so a path must go via -FilePath.
+    win = launcher.WindowsLauncher()
+    monkeypatch.setattr(
+        win, "_resolve", lambda n: ("PyCharm 2025.3.3", r"D:\JB\PyCharm\bin\pycharm64.exe")
+    )
+    result = win.launch("pycharm")
+    assert result.ok is True
+    assert result.message == "Opening PyCharm 2025.3.3."
+    cmd = fake_run.launch_commands[0]
+    assert "Start-Process -FilePath" in cmd
+    assert "pycharm64.exe" in cmd
+    assert "shell:AppsFolder" not in cmd
+
+
 # --- WindowsLauncher.is_running ---------------------------------------------
 
 def test_is_running_true_when_window_title_matches(fake_run: FakeRun) -> None:
