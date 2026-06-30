@@ -42,8 +42,12 @@ def test_healthz(client: TestClient) -> None:
 
 
 def test_chat_returns_reply(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    def fake_create(**kwargs):
+        assert kwargs["model"] == "claude-opus-4-7"
+        return _fake_message("Hello back.")
+
     monkeypatch.setattr("app.llm.get_client", lambda: SimpleNamespace(
-        messages=SimpleNamespace(create=lambda **k: _fake_message("Hello back."))
+        messages=SimpleNamespace(create=fake_create)
     ))
     response = client.post("/jarvis/chat", json={"message": "Hi Jarvis"})
     assert response.status_code == 200

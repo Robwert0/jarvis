@@ -1,6 +1,4 @@
 # tests/test_conversations_api.py
-from types import SimpleNamespace
-
 import pytest
 from fastapi.testclient import TestClient
 
