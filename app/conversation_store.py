@@ -75,6 +75,6 @@ def get(session_id):
 def list_conversations():
     with _connect() as conn:
         rows = conn.execute(
-            "SELECT id, title, updated_at FROM conversations ORDER BY updated_at DESC"
+            "SELECT id, title, updated_at FROM conversations ORDER BY updated_at DESC, created_at DESC"
         ).fetchall()
     return [{"id": i, "title": t, "updated_at": u} for i, t, u in rows]

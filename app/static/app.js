@@ -113,6 +113,7 @@ if (SR) {
     form.requestSubmit();
   };
   recog.onend = () => micBtn.classList.remove("listening");
+  recog.onerror = () => micBtn.classList.remove("listening");
 } else {
   micBtn.style.display = "none";
 }

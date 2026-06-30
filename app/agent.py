@@ -127,6 +127,7 @@ def run_agent(history, user_message, *, memories: Sequence[str] = (), settings=N
             )
         messages.append({"role": "user", "content": results})
 
-    return AgentResult(
-        "I stopped after several tool steps without finishing.", actions, model, in_tok, out_tok
-    )
+    text = llm.extract_text(resp).strip()
+    note = "(stopped after the maximum number of tool steps)"
+    reply = f"{text} {note}".strip() if text else note
+    return AgentResult(reply, actions, model, in_tok, out_tok)

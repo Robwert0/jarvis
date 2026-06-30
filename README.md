@@ -15,7 +15,8 @@ automates tasks. Powered by Claude, FastAPI, and TypeScript.
   Windows and WSL → Windows; macOS/Linux interfaces are stubbed for later.
 - **Chat over HTTP.** A text-in/text-out `/jarvis/chat` endpoint (FastAPI) backed by
   Claude, with multi-turn conversation history. Kept as a text fallback and the
-  basis for a future custom-LLM proxy. Run the API with `uvicorn app.main:app --reload`.
+  basis for a future custom-LLM proxy. Run the API with `python -m app.main`.
+- **Web UI.** A browser-based chat interface served at `http://127.0.0.1:8000`.
 
 ## Roadmap
 
@@ -50,6 +51,6 @@ pip install -r requirements.txt
 cp .env.example .env   # then fill in ANTHROPIC_API_KEY, ELEVENLABS_API_KEY, ELEVENLABS_AGENT_ID
 
 python -m app.voice              # talk to Jarvis
-uvicorn app.main:app --reload    # or use the text /jarvis/chat endpoint
+python -m app.main               # web UI + /jarvis/chat at http://127.0.0.1:8000 (localhost only — it can run real actions on the machine)
 pytest                           # run the test suite
 ```
