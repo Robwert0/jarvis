@@ -25,12 +25,17 @@ class FakeRun:
         self.stderr = stderr
         self.enumerate_calls = 0
         self.launch_commands: list[str] = []
+        self.window_titles: list[str] = []  # MainWindowTitle lines Get-Process returns
 
     def __call__(self, cmd, capture_output=False, text=False):
         joined = " ".join(cmd)
         if "Get-StartApps" in joined:
             self.enumerate_calls += 1
             return SimpleNamespace(stdout=json.dumps(APPS), returncode=0, stderr="")
+        if "Get-Process" in joined:
+            return SimpleNamespace(
+                stdout="\n".join(self.window_titles), returncode=0, stderr=""
+            )
         self.launch_commands.append(joined)
         return SimpleNamespace(stdout="", returncode=self.returncode, stderr=self.stderr)
 
@@ -124,20 +129,23 @@ def test_installed_apps_cached(fake_run: FakeRun) -> None:
 
 def test_launch_substring_match(fake_run: FakeRun) -> None:
     result = launcher.WindowsLauncher().launch("photos")
-    assert result == "Opening Photos."
+    assert result.ok is True
+    assert result.message == "Opening Photos."
     assert APPS[0]["AppID"] in fake_run.launch_commands[0]
 
 
 def test_launch_fuzzy_match(fake_run: FakeRun) -> None:
     # "calculater" is not a substring of any name but is a close typo.
     result = launcher.WindowsLauncher().launch("calculater")
-    assert result == "Opening Calculator."
+    assert result.ok is True
+    assert result.message == "Opening Calculator."
     assert APPS[1]["AppID"] in fake_run.launch_commands[0]
 
 
 def test_launch_no_match_does_not_launch(fake_run: FakeRun) -> None:
     result = launcher.WindowsLauncher().launch("zzz")
-    assert result.startswith("I couldn't find an app called zzz")
+    assert result.ok is False
+    assert result.message.startswith("I couldn't find an app called zzz")
     assert fake_run.launch_commands == []  # nothing was launched
 
 
@@ -145,11 +153,71 @@ def test_launch_reports_powershell_failure(monkeypatch: pytest.MonkeyPatch) -> N
     runner = FakeRun(returncode=1, stderr="boom")
     monkeypatch.setattr(launcher.subprocess, "run", runner)
     result = launcher.WindowsLauncher().launch("photos")
-    assert result == "I couldn't open photos - boom."
+    assert result.ok is False
+    assert result.message == "I couldn't open photos - boom."
+
+
+def test_launch_with_args_uses_argumentlist(fake_run: FakeRun) -> None:
+    result = launcher.WindowsLauncher().launch(
+        "chrome", ["--profile-directory=Profile 1"]
+    )
+    assert result.ok is True
+    assert result.message == "Opening Google Chrome."
+    cmd = fake_run.launch_commands[0]
+    assert "Start-Process -FilePath" in cmd
+    assert APPS[2]["AppID"] in cmd
+    assert "--profile-directory=Profile 1" in cmd
+    assert "shell:AppsFolder" not in cmd
+
+
+def test_launch_no_args_still_uses_appsfolder(fake_run: FakeRun) -> None:
+    launcher.WindowsLauncher().launch("photos")
+    assert "shell:AppsFolder" in fake_run.launch_commands[0]
+    assert "-ArgumentList" not in fake_run.launch_commands[0]
+
+
+def test_launch_path_appid_uses_filepath(
+    fake_run: FakeRun, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    win = launcher.WindowsLauncher()
+    monkeypatch.setattr(
+        win, "_resolve", lambda n: ("PyCharm 2025.3.3", r"D:\JB\PyCharm\bin\pycharm64.exe")
+    )
+    result = win.launch("pycharm")
+    assert result.ok is True
+    assert result.message == "Opening PyCharm 2025.3.3."
+    cmd = fake_run.launch_commands[0]
+    assert "Start-Process -FilePath" in cmd
+    assert "pycharm64.exe" in cmd
+    assert "shell:AppsFolder" not in cmd
+
+
+# --- WindowsLauncher.is_running ---------------------------------------------
+
+def test_is_running_true_when_window_title_matches(fake_run: FakeRun) -> None:
+    fake_run.window_titles = ["index.js - Google Chrome", "Settings"]
+    assert launcher.WindowsLauncher().is_running("chrome") is True
+
+
+def test_is_running_false_when_no_match(fake_run: FakeRun) -> None:
+    fake_run.window_titles = ["Settings"]
+    assert launcher.WindowsLauncher().is_running("chrome") is False
+
+
+def test_is_running_false_when_app_unknown(fake_run: FakeRun) -> None:
+    # name resolves to nothing -> biased to False (so caller launches)
+    assert launcher.WindowsLauncher().is_running("zzz") is False
+
+
+def test_top_level_is_running_unsupported_platform(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(launcher, "detect_platform", lambda: "linux")
+    assert launcher.is_running("photos") is False
 
 
 # --- launch() top-level -----------------------------------------------------
 
 def test_launch_unsupported_platform(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(launcher, "detect_platform", lambda: "linux")
-    assert launcher.launch("photos") == "Opening apps isn't wired up on this platform yet."
+    result = launcher.launch("photos")
+    assert result.ok is False
+    assert result.message == "Opening apps isn't wired up on this platform yet."

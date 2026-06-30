@@ -132,8 +132,10 @@ the agent's source of truth (it can't speak until the result returns). Verified
 live: "stop" mid-`slow_action` halted it at tick 7 and the agent said "Stopped
 after seven of sixteen steps." — the exact inverse of the failure above. Limits:
 single in-flight action only (concurrent actions need a `tool_call_id`-keyed
-registry — `begin()` warns when the limit is exceeded); dormant in production
-until Stage 5 adds a long-running action to cancel.
+registry — `begin()` warns when the limit is exceeded). No longer dormant as of
+Stage 5: `run_macro` (`app/macros.py`) is the first real cancel-token consumer —
+its run-loop polls `token.cancelled` between app launches and keeps
+`token.set_progress()` a speakable cumulative summary for `cancel_action`.
 
 ## Impact on the old roadmap
 This pivot obsoletes several previously planned stages:

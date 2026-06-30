@@ -2,7 +2,22 @@ import subprocess
 import json
 import difflib
 import sys
+from dataclasses import dataclass
 from pathlib import Path
+
+
+@dataclass
+class LaunchResult:
+    ok: bool
+    message: str
+
+
+def _ps_args(args):
+    return ",".join("'" + a.replace("'", "''") + "'" for a in args)
+
+
+def _is_path(appid):
+    return ":\\" in appid or appid.lower().endswith(".exe")
 
 
 def detect_platform():
@@ -34,40 +49,64 @@ class WindowsLauncher:
 
         return self._apps
 
-    def launch(self, name):
+    def _resolve(self, name):
+        """Best-match (display_name, appid) for a name, or None."""
         apps = self._installed_apps()
         app_name = name.strip().lower()
-        hits = [(name, appid) for name, appid in apps if app_name in name.lower()]
+        hits = [(n, a) for n, a in apps if app_name in n.lower()]
         if hits:
-            name, appid = min(hits, key=lambda pair: len(pair[0]))
-        else:
-            by_lower = {name.lower(): (name, appid) for name, appid in apps}
-            close = difflib.get_close_matches(app_name, list(by_lower), n=1, cutoff=0.6)
-            if close:
-                name, appid = by_lower[close[0]]
-            else:
-                suggestions = difflib.get_close_matches(
-                    app_name, list(by_lower), n=3, cutoff=0.4
-                )
-                hint = (
-                    f"Did you mean: {', '.join(suggestions)}?" if suggestions else " "
-                )
-                return f"I couldn't find an app called {app_name}. {hint}"
+            return min(hits, key=lambda pair: len(pair[0]))
+        by_lower = {n.lower(): (n, a) for n, a in apps}
+        close = difflib.get_close_matches(app_name, list(by_lower), n=1, cutoff=0.6)
+        if close:
+            return by_lower[close[0]]
+        return None
 
+    def launch(self, name, args=None):
+        app_name = name.strip().lower()
+        resolved = self._resolve(name)
+        if resolved is None:
+            apps = self._installed_apps()
+            by_lower = {n.lower(): (n, a) for n, a in apps}
+            suggestions = difflib.get_close_matches(
+                app_name, list(by_lower), n=3, cutoff=0.4
+            )
+            hint = f"Did you mean: {', '.join(suggestions)}?" if suggestions else " "
+            return LaunchResult(
+                False, f"I couldn't find an app called {app_name}. {hint}"
+            )
+        display_name, appid = resolved
+        if args or _is_path(appid):
+            arg_list = f" -ArgumentList {_ps_args(args)}" if args else ""
+            command = f'Start-Process -FilePath "{appid}"{arg_list}'
+        else:
+            command = f'Start-Process "shell:AppsFolder\\{appid}"'
+        res = subprocess.run(
+            ["powershell.exe", "-NoProfile", "-Command", command],
+            capture_output=True,
+            text=True,
+        )
+        if res.returncode == 0:
+            return LaunchResult(True, f"Opening {display_name}.")
+        return LaunchResult(False, f"I couldn't open {app_name} - {res.stderr.strip()}.")
+
+    def is_running(self, name):
+        resolved = self._resolve(name)
+        if resolved is None:
+            return False
+        display_name, _ = resolved
         res = subprocess.run(
             [
                 "powershell.exe",
                 "-NoProfile",
                 "-Command",
-                f'Start-Process "shell:AppsFolder\\{appid}"',
+                "Get-Process | Where-Object { $_.MainWindowTitle } | "
+                "Select-Object -ExpandProperty MainWindowTitle",
             ],
             capture_output=True,
             text=True,
         )
-
-        if res.returncode == 0:
-            return f"Opening {name}."
-        return f"I couldn't open {app_name} - {res.stderr.strip()}."
+        return display_name.lower() in res.stdout.lower()
 
 
 _launcher = None
@@ -82,8 +121,15 @@ def get_launcher():
     return _launcher
 
 
-def launch(app):
+def launch(app, args=None):
     launcher = get_launcher()
     if launcher is None:
-        return "Opening apps isn't wired up on this platform yet."
-    return launcher.launch(app)
+        return LaunchResult(False, "Opening apps isn't wired up on this platform yet.")
+    return launcher.launch(app, args)
+
+
+def is_running(app):
+    launcher = get_launcher()
+    if launcher is None:
+        return False
+    return launcher.is_running(app)
