@@ -47,18 +47,11 @@ TOOLS = [
 ]
 
 
-def _remember(params):
-    fact = (params or {}).get("fact", "").strip()
-    if fact:
-        memory_store.remember(fact)
-    return "Got it — I'll remember that."
-
-
 DISPATCH = {
     "open_app": tools.open_app,
     "run_macro": tools.run_macro,
     "cancel_action": tools.cancel_action,
-    "remember": _remember,
+    "remember": tools.remember,
 }
 
 

@@ -1,7 +1,7 @@
 from elevenlabs.conversational_ai.conversation import ClientTools
 from app.launcher import launch
 from app.cancellation import current
-from app import macros
+from app import macros, memory_store
 import time
 
 CANCEL_WAIT_TIMEOUT = 5.0
@@ -32,9 +32,17 @@ def run_macro(params):
     return macros.run((params or {}).get("macro", "").strip())
 
 
+def remember(params):
+    fact = (params or {}).get("fact", "").strip()
+    if fact:
+        memory_store.remember(fact)
+    return "Got it — I'll remember that."
+
+
 def build_client_tools():
     tools = ClientTools()
     tools.register("open_app", open_app)
     tools.register("cancel_action", cancel_action)
     tools.register("run_macro", run_macro)
+    tools.register("remember", remember)
     return tools
