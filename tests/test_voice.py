@@ -53,3 +53,14 @@ def test_run_session_skips_update_when_no_memory():
     fake = FakeConversation()
     voice.run_session(settings=SimpleNamespace(), conversation_factory=lambda s: fake)
     assert fake.contextual_updates == []
+
+
+def test_run_session_ends_session_on_keyboard_interrupt():
+    class Interrupting(FakeConversation):
+        def wait_for_session_end(self):
+            raise KeyboardInterrupt
+
+    fake = Interrupting()
+    with pytest.raises(KeyboardInterrupt):
+        voice.run_session(settings=SimpleNamespace(), conversation_factory=lambda s: fake)
+    assert fake.ended is True

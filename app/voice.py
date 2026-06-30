@@ -7,7 +7,7 @@ from app import memory_store
 from app.tools import build_client_tools
 
 
-def memory_block(memories):
+def memory_block(memories: list[str]) -> str:
     if not memories:
         return ""
     facts = "\n".join(f"- {m}" for m in memories)
@@ -32,15 +32,15 @@ def _default_factory(settings):
     )
 
 
-def run_session(*, settings=None, conversation_factory=None):
+def run_session(*, settings=None, conversation_factory=None) -> str | None:
     settings = settings or get_settings()
     factory = conversation_factory or _default_factory
     conversation = factory(settings)
     conversation.start_session()
-    block = memory_block(memory_store.list_memories())
-    if block:
-        conversation.send_contextual_update(block)
     try:
+        block = memory_block(memory_store.list_memories())
+        if block:
+            conversation.send_contextual_update(block)
         return conversation.wait_for_session_end()
     except KeyboardInterrupt:
         conversation.end_session()
