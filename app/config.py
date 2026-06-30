@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     elevenlabs_api_key: str | None = None
     elevenlabs_agent_id: str | None = None
 
+    picovoice_access_key: str | None = None
+
 @lru_cache
 def get_settings()-> Settings:
     return Settings()
