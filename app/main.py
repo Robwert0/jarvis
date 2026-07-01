@@ -1,5 +1,6 @@
 import anthropic
 from fastapi import FastAPI, Depends, HTTPException, APIRouter
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 
@@ -11,6 +12,20 @@ from app import memory_store
 from app import schemas
 
 app = FastAPI(title="Jarvis", version="0.1.0")
+
+# The Tauri desktop UI runs from its own origin (tauri://localhost /
+# http://tauri.localhost), so the packaged app's requests to this local
+# backend are cross-origin. Single-user local tool on a trusted machine —
+# allow any origin rather than maintaining a list. In dev the Vite proxy
+# keeps things same-origin, so this only matters for the built app.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 router = APIRouter(prefix="/jarvis")
 
 

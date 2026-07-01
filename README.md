@@ -17,6 +17,8 @@ automates tasks. Powered by Claude, FastAPI, and TypeScript.
   Claude, with multi-turn conversation history. Kept as a text fallback and the
   basis for a future custom-LLM proxy. Run the API with `python -m app.main`.
 - **Web UI.** A browser-based chat interface served at `http://127.0.0.1:8000`.
+- **Desktop app.** A Discord/Steam-style native app (Tauri + React + Vite) in
+  [`frontend/`](frontend/README.md), talking to the same backend API.
 
 ## Roadmap
 
@@ -40,7 +42,7 @@ is in [`docs/voice-architecture.md`](docs/voice-architecture.md).
 - **LLM:** Claude (Anthropic), running as the ElevenLabs Agent's LLM
 - **Voice (STT + TTS + turn-taking + barge-in):** ElevenLabs Agents
 - **Local actions:** ElevenLabs client tools executed on-device via the Python SDK
-- **Frontend:** TypeScript
+- **Frontend:** Desktop app — Tauri v2 + React + Vite (TypeScript), in `frontend/`
 - **Storage:** SQLite when needed
 
 ## Getting started
