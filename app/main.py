@@ -6,6 +6,7 @@ from pathlib import Path
 from app.config import Settings, get_settings
 from app.agent import run_agent
 from app import conversation_store as store
+from app import macros_api
 from app import memory_store
 from app import schemas
 
@@ -68,6 +69,7 @@ def list_memories_endpoint() -> list[str]:
 
 
 app.include_router(router)
+app.include_router(macros_api.router)
 
 app.mount(
     "/",
