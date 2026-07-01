@@ -8,7 +8,10 @@ TOOL_GUIDANCE = (
     "call open_app. When they ask to open a named environment/setup, call "
     "run_macro. When they ask to stop something in progress, call cancel_action. "
     "When you learn a durable fact about the user worth recalling in future "
-    "conversations, call remember with a short statement of that fact."
+    "conversations, call remember with a short statement of that fact. "
+    "When the user asks something that needs current or external information, "
+    "call search_web. When they ask to change the volume, control playback, or "
+    "lock or sleep the computer, call control_system. "
 )
 
 TOOLS = [
@@ -44,6 +47,32 @@ TOOLS = [
             "required": ["fact"],
         },
     },
+    {
+        "name": "search_web",
+        "description": "Search the web for current or external information.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"query": {"type": "string", "description": "The search query."}},
+            "required": ["query"],
+        },
+    },
+    {
+        "name": "control_system",
+        "description": "Control the local machine (volume, media playback, lock, sleep).",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "description": (
+                        "One of: volume_up, volume_down, mute, play_pause, "
+                        "next_track, previous_track, lock, sleep."
+                    ),
+                }
+            },
+            "required": ["action"],
+        },
+    },
 ]
 
 
@@ -52,6 +81,8 @@ DISPATCH = {
     "run_macro": tools.run_macro,
     "cancel_action": tools.cancel_action,
     "remember": tools.remember,
+    "search_web": tools.search_web,
+    "control_system": tools.control_system,
 }
 
 
