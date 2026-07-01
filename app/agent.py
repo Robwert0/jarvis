@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 
-from app import llm, memory_store, tools
+from app import llm, tools
 
 TOOL_GUIDANCE = (
     "You can take real actions with tools. When the user asks to open an app, "
@@ -47,18 +47,11 @@ TOOLS = [
 ]
 
 
-def _remember(params):
-    fact = (params or {}).get("fact", "").strip()
-    if fact:
-        memory_store.remember(fact)
-    return "Got it — I'll remember that."
-
-
 DISPATCH = {
     "open_app": tools.open_app,
     "run_macro": tools.run_macro,
     "cancel_action": tools.cancel_action,
-    "remember": _remember,
+    "remember": tools.remember,
 }
 
 
