@@ -36,7 +36,7 @@ def update_macro(name: str, body: schemas.MacroUpdate):
     return schemas.MacroView(name=name, apps=apps)
 
 
-@router.delete("/{name}", status_code=204)
-def delete_macro(name: str):
+@router.delete("/{name}", status_code=204, response_model=None)
+def delete_macro(name: str) -> None:
     if not macro_store.delete_macro(name):
         raise HTTPException(status_code=404, detail="No such macro")
