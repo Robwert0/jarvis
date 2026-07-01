@@ -1,7 +1,7 @@
 from elevenlabs.conversational_ai.conversation import ClientTools
 from app.launcher import launch
 from app.cancellation import current
-from app import macros, memory_store
+from app import macros, memory_store, web_search, system_control
 import time
 
 CANCEL_WAIT_TIMEOUT = 5.0
@@ -39,10 +39,20 @@ def remember(params):
     return "Got it — I'll remember that."
 
 
+def search_web(params):
+    return web_search.search((params or {}).get("query", "").strip())
+
+
+def control_system(params):
+    return system_control.control((params or {}).get("action", "").strip())
+
+
 def build_client_tools():
     tools = ClientTools()
     tools.register("open_app", open_app)
     tools.register("cancel_action", cancel_action)
     tools.register("run_macro", run_macro)
     tools.register("remember", remember)
+    tools.register("search_web", search_web)
+    tools.register("control_system", control_system)
     return tools
