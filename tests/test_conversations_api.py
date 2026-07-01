@@ -59,3 +59,14 @@ def test_delete_memory(client: TestClient):
 
 def test_delete_memory_unknown_404(client: TestClient):
     assert client.delete("/jarvis/memories/999").status_code == 404
+
+
+def test_delete_conversation(client: TestClient):
+    sid = conv_store.new_session()
+    conv_store.append(sid, "user", "hi")
+    assert client.delete(f"/jarvis/conversations/{sid}").status_code == 204
+    assert client.get(f"/jarvis/conversations/{sid}").status_code == 404
+
+
+def test_delete_conversation_unknown_404(client: TestClient):
+    assert client.delete("/jarvis/conversations/nope").status_code == 404

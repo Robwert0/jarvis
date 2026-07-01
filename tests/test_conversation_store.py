@@ -45,3 +45,20 @@ def test_list_conversations_recent_first():
     store.append(a, "user", "third")  # touches `a` most recently
     ids = [c["id"] for c in store.list_conversations()]
     assert ids == [a, b]
+
+
+import app.conversation_store as conv_store
+
+
+def test_delete_conversation_removes_row_and_messages(tmp_path, monkeypatch):
+    monkeypatch.setattr(conv_store, "DB_PATH", tmp_path / "jarvis.db")
+    sid = conv_store.new_session()
+    conv_store.append(sid, "user", "hi")
+    assert conv_store.delete_conversation(sid) is True
+    assert conv_store.get(sid) == []
+    assert all(c["id"] != sid for c in conv_store.list_conversations())
+
+
+def test_delete_conversation_unknown_returns_false(tmp_path, monkeypatch):
+    monkeypatch.setattr(conv_store, "DB_PATH", tmp_path / "jarvis.db")
+    assert conv_store.delete_conversation("nope") is False
