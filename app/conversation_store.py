@@ -80,7 +80,7 @@ def list_conversations():
     return [{"id": i, "title": t, "updated_at": u} for i, t, u in rows]
 
 
-def delete_conversation(session_id):
+def delete_conversation(session_id: str) -> bool:
     with _connect() as conn:
         cur = conn.execute(
             "DELETE FROM conversations WHERE id = ?", (session_id,)
