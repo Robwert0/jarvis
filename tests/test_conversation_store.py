@@ -45,3 +45,15 @@ def test_list_conversations_recent_first():
     store.append(a, "user", "third")  # touches `a` most recently
     ids = [c["id"] for c in store.list_conversations()]
     assert ids == [a, b]
+
+
+def test_delete_conversation_removes_row_and_messages():
+    sid = store.new_session()
+    store.append(sid, "user", "hi")
+    assert store.delete_conversation(sid) is True
+    assert store.get(sid) == []
+    assert all(c["id"] != sid for c in store.list_conversations())
+
+
+def test_delete_conversation_unknown_returns_false():
+    assert store.delete_conversation("nope") is False

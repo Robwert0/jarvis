@@ -27,3 +27,18 @@ def list_memories():
     with _connect() as conn:
         rows = conn.execute("SELECT content FROM memories ORDER BY id").fetchall()
     return [row[0] for row in rows]
+
+
+def list_memories_detailed():
+    with _connect() as conn:
+        rows = conn.execute(
+            "SELECT id, content, created_at FROM memories ORDER BY id"
+        ).fetchall()
+    return [{"id": i, "content": c, "created_at": t} for i, c, t in rows]
+
+
+def delete_memory(memory_id):
+    with _connect() as conn:
+        cur = conn.execute("DELETE FROM memories WHERE id = ?", (memory_id,))
+        conn.commit()
+        return cur.rowcount > 0

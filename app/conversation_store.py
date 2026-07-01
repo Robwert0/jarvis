@@ -78,3 +78,15 @@ def list_conversations():
             "SELECT id, title, updated_at FROM conversations ORDER BY updated_at DESC, created_at DESC"
         ).fetchall()
     return [{"id": i, "title": t, "updated_at": u} for i, t, u in rows]
+
+
+def delete_conversation(session_id: str) -> bool:
+    with _connect() as conn:
+        cur = conn.execute(
+            "DELETE FROM conversations WHERE id = ?", (session_id,)
+        )
+        conn.execute(
+            "DELETE FROM messages WHERE conversation_id = ?", (session_id,)
+        )
+        conn.commit()
+        return cur.rowcount > 0

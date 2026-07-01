@@ -43,6 +43,30 @@ def test_get_unknown_conversation_404(client: TestClient):
     assert client.get("/jarvis/conversations/nope").status_code == 404
 
 
-def test_memories_endpoint(client: TestClient):
+def test_memories_endpoint_returns_detailed_shape(client: TestClient):
     mem_store.remember("likes tea")
-    assert client.get("/jarvis/memories").json() == ["likes tea"]
+    rows = client.get("/jarvis/memories").json()
+    assert rows[0]["content"] == "likes tea"
+    assert isinstance(rows[0]["id"], int)
+
+
+def test_delete_memory(client: TestClient):
+    mem_store.remember("likes tea")
+    mem_id = client.get("/jarvis/memories").json()[0]["id"]
+    assert client.delete(f"/jarvis/memories/{mem_id}").status_code == 204
+    assert client.get("/jarvis/memories").json() == []
+
+
+def test_delete_memory_unknown_404(client: TestClient):
+    assert client.delete("/jarvis/memories/999").status_code == 404
+
+
+def test_delete_conversation(client: TestClient):
+    sid = conv_store.new_session()
+    conv_store.append(sid, "user", "hi")
+    assert client.delete(f"/jarvis/conversations/{sid}").status_code == 204
+    assert client.get(f"/jarvis/conversations/{sid}").status_code == 404
+
+
+def test_delete_conversation_unknown_404(client: TestClient):
+    assert client.delete("/jarvis/conversations/nope").status_code == 404

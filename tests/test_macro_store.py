@@ -27,3 +27,24 @@ def test_upsert_overwrites_existing_name():
     store.upsert_macro("work", ["Code"])
     store.upsert_macro("work", ["Code", "Slack"])
     assert store.get_macro("work") == ["Code", "Slack"]
+
+
+def test_create_macro_new_returns_true():
+    assert store.create_macro("work", ["chrome"]) is True
+    assert store.get_macro("work") == ["chrome"]
+
+
+def test_create_macro_duplicate_returns_false_and_keeps_original():
+    store.create_macro("work", ["chrome"])
+    assert store.create_macro("work", ["firefox"]) is False
+    assert store.get_macro("work") == ["chrome"]
+
+
+def test_delete_macro():
+    store.create_macro("work", ["chrome"])
+    assert store.delete_macro("work") is True
+    assert store.get_macro("work") is None
+
+
+def test_delete_macro_unknown_returns_false():
+    assert store.delete_macro("nope") is False
