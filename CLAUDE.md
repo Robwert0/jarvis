@@ -4,11 +4,13 @@
 **Direction change (was: "parked at Stage 5 #1").** Jarvis is being built out as a
 **single-user, local desktop personal assistant** — a real tool to actually use,
 not a multi-user portfolio app. **Built and shipped to `main`:** Stages 1–5 #1,
-an action-capable **web UI with memory** (PR #12), and **Porcupine wake word**
-(PR #13). **In flight:** the backend **management API** (PR #14, Stage 5 #2).
-**Dropped by explicit decision:** Stage 8's multi-user app, auth/authz, and
-security hardening (see the rigor-bar note below). Next track is the frontend
-management UI (Stage 5 #3). Read the roadmap as history + intent, not inventory.
+an action-capable **web UI with memory** (PR #12), **Porcupine wake word**
+(PR #13), the backend **management API** (PR #14, Stage 5 #2), and **Stage 6
+tools** — `search_web` + `control_system` (PR #16). **Dropped by explicit
+decision:** Stage 8's multi-user app, auth/authz, and security hardening (see the
+rigor-bar note below). **Next track is the frontend management UI (Stage 5 #3)** —
+the last real feature track; everything else left is verification or optional
+(see Current stage). Read the roadmap as history + intent, not inventory.
 
 ## Goal
 Personal AI assistant inspired by Iron Man's Jarvis: voice interaction,
@@ -48,9 +50,11 @@ superseded.
    SDK won't cancel in-flight tools, so cancellation is LLM-driven via a
    `cancel_action` tool + cooperative cancel token.
 5. Composite actions / macros — **#1 storage + cancellable runner done** (PR #10,
-   `run_macro`); **#2 backend management API in flight** (PR #14); **#3 frontend
+   `run_macro`); **#2 backend management API done** (PR #14); **#3 frontend
    macro-management UI is the next track.**
-6. More tools (search_web, smart home, etc.) — not built.
+6. More tools — **`search_web` (Tavily) + `control_system` (volume/media/lock/
+   sleep) done** (PR #16). Smart home / other integrations not built (optional
+   breadth).
 7. Wake word activation — **done** (PR #13, Porcupine); pending live mic
    acceptance on Robert's machine (see Current stage).
 8. ~~User-facing multi-user app~~ — **DROPPED.** Superseded by the single-user
@@ -88,18 +92,31 @@ Companion project (own brainstorm, parked): a CV site with an AI chatbot over
 **RAG** — the self-demonstrating front door.
 
 ## Current stage
-**Backend feature-complete for the frontend pivot.** Robert's aim: finish the
-backend, then move entirely to frontend work.
+**Backend feature-complete.** The only real feature track left is the **frontend
+management UI (Stage 5 #3)** — a page to edit macros, prune memories, and delete
+conversations against the management API. Everything else outstanding is either
+**verification** (wake-word mic + `control_system` WSL→Windows interop, both
+manual on Robert's machine), **optional** (Sub-project B packaging as a
+tray/autostart app; smart-home tools), or **deliberately deferred** (observability,
+eval harness — see rigor-bar note).
 
-**PR #14 (in flight) — backend management API (Stage 5 #2).** Gives the frontend
-a full surface to consume: macro CRUD in a dedicated router (`app/macros_api.py`,
-`POST`=create/409, `PUT`=upsert, `DELETE`); memory `GET /jarvis/memories` now
-returns `[{id, content, created_at}]` plus `DELETE /jarvis/memories/{id}`;
-`DELETE /jarvis/conversations/{session_id}` (row + messages). New store fns:
-`macro_store.create_macro`/`delete_macro`, `memory_store.list_memories_detailed`/
-`delete_memory`, `conversation_store.delete_conversation`. `list_memories() ->
-list[str]` deliberately unchanged (the agent/voice prompt-injection path depends
-on it). 102 tests green; built subagent-driven TDD, whole-branch review clean.
+**PR #16 (merged) — Stage 6 tools.** `search_web` (Tavily, `app/web_search.py`)
+and `control_system` (`app/system_control.py`: volume/media/lock/sleep run from
+WSL via `powershell.exe` SendKeys + `rundll32.exe`), both wired into voice
+(`build_client_tools()`) and text (`agent.py`). Each returns a string and never
+raises into the agent loop; injectable seams keep tests off the network/OS.
+**Live-unverified:** `control_system` depends on WSL→Windows interop (fails
+gracefully if off). Needs `TAVILY_API_KEY` + EL dashboard tool declarations.
+
+**PR #14 (merged) — backend management API (Stage 5 #2).** Macro CRUD in a
+dedicated router (`app/macros_api.py`, `POST`=create/409, `PUT`=upsert, `DELETE`);
+memory `GET /jarvis/memories` returns `[{id, content, created_at}]` plus
+`DELETE /jarvis/memories/{id}`; `DELETE /jarvis/conversations/{session_id}` (row +
+messages). New store fns: `macro_store.create_macro`/`delete_macro`,
+`memory_store.list_memories_detailed`/`delete_memory`,
+`conversation_store.delete_conversation`. `list_memories() -> list[str]`
+deliberately unchanged (the agent/voice prompt-injection path depends on it).
+Built subagent-driven TDD, whole-branch review clean.
 
 **PR #13 (merged) — wake word + voice memory.** Porcupine "jarvis" (`app/wake.py`)
 gates a reusable memory-aware `run_session()` in `app/voice.py` that bridges saved
