@@ -35,3 +35,20 @@ def upsert_macro(name, apps):
             (name, json.dumps(apps)),
         )
         conn.commit()
+
+
+def create_macro(name, apps):
+    with _connect() as conn:
+        cur = conn.execute(
+            "INSERT OR IGNORE INTO macros (name, apps) VALUES (?, ?)",
+            (name, json.dumps(apps)),
+        )
+        conn.commit()
+        return cur.rowcount > 0
+
+
+def delete_macro(name):
+    with _connect() as conn:
+        cur = conn.execute("DELETE FROM macros WHERE name = ?", (name,))
+        conn.commit()
+        return cur.rowcount > 0
