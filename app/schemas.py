@@ -34,3 +34,31 @@ class ChatResponse(BaseModel):
     input_tokens: int
     output_tokens: int
     actions: list[ActionView] = []
+
+
+class MacroAppObject(BaseModel):
+    app: str = Field(..., min_length=1)
+    args: list[str] = []
+
+
+MacroAppEntry = str | MacroAppObject
+
+
+class MacroCreate(BaseModel):
+    name: str = Field(..., min_length=1)
+    apps: list[MacroAppEntry] = Field(..., min_length=1)
+
+
+class MacroUpdate(BaseModel):
+    apps: list[MacroAppEntry] = Field(..., min_length=1)
+
+
+class MacroView(BaseModel):
+    name: str
+    apps: list[MacroAppEntry]
+
+
+class MemoryView(BaseModel):
+    id: int
+    content: str
+    created_at: str
