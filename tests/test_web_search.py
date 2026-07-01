@@ -1,5 +1,3 @@
-import pytest
-
 import app.web_search as web_search
 
 

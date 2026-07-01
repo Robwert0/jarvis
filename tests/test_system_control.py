@@ -47,6 +47,7 @@ def test_sleep_runs_setsuspendstate():
     out = sc.control("sleep", run=run)
     assert run.commands[0][0] == "rundll32.exe"
     assert "SetSuspendState" in run.commands[0][1]
+    assert run.commands[0][2] == "0,1,0"
     assert out == "Going to sleep."
 
 
