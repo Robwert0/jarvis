@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     elevenlabs_agent_id: str | None = None
 
     picovoice_access_key: str | None = None
+    tavily_api_key: str | None = None
 
 @lru_cache
 def get_settings() -> Settings:
