@@ -81,7 +81,7 @@ async function refreshSidebar() {
     mu.innerHTML = "";
     for (const m of mems) {
       const li = document.createElement("li");
-      li.textContent = m;
+      li.textContent = m.content;
       mu.appendChild(li);
     }
   } catch (err) {

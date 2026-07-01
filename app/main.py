@@ -63,9 +63,15 @@ def get_conversation_endpoint(session_id: str) -> list[schemas.Message]:
     return [schemas.Message(**m) for m in messages]
 
 
-@router.get("/memories", response_model=list[str])
-def list_memories_endpoint() -> list[str]:
-    return memory_store.list_memories()
+@router.get("/memories", response_model=list[schemas.MemoryView])
+def list_memories_endpoint() -> list[schemas.MemoryView]:
+    return [schemas.MemoryView(**m) for m in memory_store.list_memories_detailed()]
+
+
+@router.delete("/memories/{memory_id}", status_code=204)
+def delete_memory_endpoint(memory_id: int) -> None:
+    if not memory_store.delete_memory(memory_id):
+        raise HTTPException(status_code=404, detail="No such memory")
 
 
 app.include_router(router)
