@@ -1,142 +1,146 @@
 # Jarvis Project Context
 
-## Status — parked at Stage 5 #1 (2026-06-30)
-Working checkpoint, not abandoned. **Built and shipped:** Stages 1–4 plus Stage 5
-sub-project #1 (voice-driven, cancellable app-launching macros). Everything below
-Stage 5 #1 in the roadmap — the management API/UI (#2/#3), Stage 8's multi-user
-app, and the cross-cutting rigor tracks (auth, DB schema, observability, eval
-harness) — is **planned, not built**. Read the roadmap as intent, not inventory.
+## Status — active; single-user local assistant (2026-07-01)
+**Direction change (was: "parked at Stage 5 #1").** Jarvis is being built out as a
+**single-user, local desktop personal assistant** — a real tool to actually use,
+not a multi-user portfolio app. **Built and shipped to `main`:** Stages 1–5 #1,
+an action-capable **web UI with memory** (PR #12), and **Porcupine wake word**
+(PR #13). **In flight:** the backend **management API** (PR #14, Stage 5 #2).
+**Dropped by explicit decision:** Stage 8's multi-user app, auth/authz, and
+security hardening (see the rigor-bar note below). Next track is the frontend
+management UI (Stage 5 #3). Read the roadmap as history + intent, not inventory.
 
 ## Goal
 Personal AI assistant inspired by Iron Man's Jarvis: voice interaction,
-computer control, smart home integration.
+computer control, smart home integration. Scoped to **single-user, local** —
+runs on Robert's machine, no accounts.
 
 ## Stack
 - Backend: FastAPI (Python 3.12)
-- Frontend: TypeScript
-- LLM: Claude (Anthropic) — runs as the ElevenLabs Agent's LLM (native option
-  to start; custom-LLM proxy as an escape hatch)
+- Frontend: vanilla HTML/CSS/JS in `app/static/` (type-or-talk page, Web Speech
+  API for browser speech). Kept minimal-but-working on purpose.
+- LLM: Claude (Anthropic). Two paths: the **ElevenLabs Agent's LLM** for the
+  voice loop, and a **server-side Claude tool-use loop** (`app/agent.py`) behind
+  the `/chat` web path.
 - Voice loop (STT + TTS + turn-taking + barge-in + AEC): ElevenLabs Agents
-- Local actions: ElevenLabs client tools, executed on-device via the Python SDK
-- Wake word: Porcupine (later) — re-evaluate, ElevenLabs may cover activation
-- Storage: SQLite when needed, no Postgres
+- Local actions: client tools executed on-device (`open_app`, `run_macro`,
+  `cancel_action`, `remember`) — shared between the voice and text paths
+- Wake word: **Porcupine "jarvis"** (`app/wake.py`) — built (PR #13); gates the
+  ElevenLabs session so nothing runs/costs while idle
+- Storage: **SQLite in use** — `jarvis.db` (conversations, messages, memories),
+  `macros.db` (macros); both gitignored. No Postgres.
 - No Docker for now
 
 Voice architecture decision and rationale: see `docs/voice-architecture.md`.
 
 ## Roadmap
 Revised 2026-06-15 after the ElevenLabs-owns-the-voice-loop pivot (see
-`docs/voice-architecture.md`). The old "build the pipeline ourselves" plan
-(Whisper STT, local TTS, WebSocket streaming) is superseded.
+`docs/voice-architecture.md`); status updated 2026-07-01. The old "build the
+pipeline ourselves" plan (Whisper STT, local TTS, WebSocket streaming) is
+superseded.
 
-1. HTTP /chat endpoint (text-in, text-out via Claude) — done, kept as text
-   fallback / future custom-LLM proxy
-2. Stand up an ElevenLabs Agent with Claude as the LLM (voice loop working
-   end-to-end with a basic prompt, no actions yet) — done (PR #6); `app/voice.py`
-   runs the loop, verified mic -> STT -> Claude -> TTS -> speaker
-3. Local client-tool executor (Python SDK); first tool: open_app — done
-   (PR #8); result round-trips back to the agent, failure path verified
-4. Interruption-vs-in-flight-action spike + cancellation handling — done;
-   spike confirmed the SDK won't cancel in-flight tools, so cancellation is
-   LLM-driven via a `cancel_action` tool + cooperative cancel token
-5. Composite actions / macros (open_work_environment) — first real consumer
-   of the cancel token
-6. More tools (search_web, smart home, etc.)
-7. Wake word activation (evaluate ElevenLabs vs Porcupine)
-8. User-facing app — a real, multi-user app people can actually use, not just
-   the local `python -m app.voice` loop. Requirements:
-   - One UI where a user can **type or talk** to Jarvis (text via the /chat
-     path; speech via the ElevenLabs voice surface).
-   - **Easy for anyone to try** — low-friction setup or a hosted demo.
-   - **SQLite-backed, multi-user**: each user has their own list of recent
-     conversation sessions, persisted across restarts. This is the trigger for
-     the long-deferred Stage 1 SessionStore → SQLite swap, now widened to
-     multi-user. "Like a real app."
-   Open design questions (own brainstorm before building): user identity/auth;
-   how in-browser voice relates to the current ElevenLabs local loop (embed the
-   widget vs. the custom-LLM-proxy path in `docs/voice-architecture.md`); how it
-   relates to the existing TS frontend and the Stage 5 #3 macro-management UI.
-9. UI polish (of the Stage 8 app)
+1. HTTP /chat endpoint (text-in, text-out via Claude) — **done** (PR #1). Now a
+   full server-side tool-use loop (`app/agent.py`), the web UI's backend.
+2. ElevenLabs Agent with Claude as the LLM (voice loop end-to-end) — **done**
+   (PR #6); `app/voice.py` runs the loop, verified mic → STT → Claude → TTS.
+3. Local client-tool executor; first tool `open_app` — **done** (PR #8).
+4. Interruption-vs-in-flight-action spike + cancellation — **done** (PR #9);
+   SDK won't cancel in-flight tools, so cancellation is LLM-driven via a
+   `cancel_action` tool + cooperative cancel token.
+5. Composite actions / macros — **#1 storage + cancellable runner done** (PR #10,
+   `run_macro`); **#2 backend management API in flight** (PR #14); **#3 frontend
+   macro-management UI is the next track.**
+6. More tools (search_web, smart home, etc.) — not built.
+7. Wake word activation — **done** (PR #13, Porcupine); pending live mic
+   acceptance on Robert's machine (see Current stage).
+8. ~~User-facing multi-user app~~ — **DROPPED.** Superseded by the single-user
+   local direction. The useful parts (type-or-talk UI, SQLite persistence)
+   landed single-user in PR #12; the multi-user / hosted-demo / per-user-auth
+   ambition is not being pursued.
+9. UI polish — deferred (of the single-user web UI).
 
-### Engineering-rigor bar (what makes this hireable, not just a demo)
-Target reader: a **backend-focused software engineer who can also build AI**.
-For that reader, *how* this is built matters more than how many features it has,
-so the stages above are built to a **production bar, not demo-minimum**. Depth
-over breadth — no commodity-tool padding (a dozen integrations doesn't impress;
-one subsystem done rigorously does). These tracks cut **across** stages rather
-than being features of their own:
+### Engineering-rigor bar — revised after the single-user pivot
+Original framing targeted a **backend engineer who can also build AI**, with
+**auth + multi-user** as the core showcase. That framing is **downgraded**: the
+project is now a single-user local tool, so **auth/authz, per-user isolation,
+and security hardening are deliberately not built** (Robert's explicit call —
+the machine-trust boundary is "it's my machine"). What still carries the
+"built well, not demo-minimum" signal:
 
-- **Auth + multi-user data model** (lands in Stage 8): real authn/authz and
-  per-user isolation, not a hardcoded user. The core backend showcase.
-- **DB done properly**: a defensible schema (users / conversations / messages),
-  indexing, migrations — not just "a SQLite store". Supersedes the Stage 1
-  in-memory SessionStore.
-- **API design rigor** (Stage 5 sub-project #2, Stage 8): Pydantic validation,
-  correct status codes, consistent error envelopes, OpenAPI docs.
-- **Observability**: structured logging + per-request token / cost / latency
-  tracking, persisted to the same DB. A production concern with an AI twist.
-- **Eval harness**: automated tests of *agent behavior* ("user says X → right
-  tool / right answer"), not just unit tests. Rare in portfolios; high signal.
-- **Security / guardrails**: Jarvis executes real commands on the machine —
-  document the trust boundary, validate tool inputs, resist prompt injection.
-  A standout story a plain chatbot project can't claim.
-- **Concurrency story** (already built — needs articulating): async FastAPI +
-  threaded tool execution + the cooperative cancel token (Stage 4 spike).
+- **API design rigor** (Stage 5 #2 / PR #14): Pydantic validation at the
+  boundary (incl. a `str | {app,args}` macro union), correct status codes
+  (201/409/200/204/404/422), consistent `{"detail": ...}` error envelope,
+  OpenAPI docs. **Built.**
+- **DB done reasonably**: indexed SQLite schema (conversations / messages /
+  memories / macros) behind thin store modules. Single-user, so no users table
+  or migrations story. **Built.**
+- **Concurrency story** (built — needs articulating): async FastAPI + threaded
+  tool execution + the cooperative cancel token (Stage 4).
+- **Observability** (structured logging + per-request token/cost/latency to the
+  DB): **considered, deferred** — not built, and no longer load-bearing.
+- **Eval harness** (tests of agent behavior): **not built**; still a nice-to-have.
+- **Guardrails / tool-input validation**: partial via the API-boundary
+  validation; prompt-injection hardening not pursued (single-user trust model).
 
-Deliberately **not** over-invested: the frontend stays minimal-but-working
-(enough to be testable — it's "just there"); no breadth-for-breadth tools.
+Frontend stays minimal-but-working (testable, "just there").
 
 Companion project (own brainstorm, parked): a CV site with an AI chatbot over
-**RAG** — the self-demonstrating front door, showing knowledge-retrieval depth
-alongside Jarvis's action-taking depth.
+**RAG** — the self-demonstrating front door.
 
 ## Current stage
-**Parked at Stage 5 #1 (merged, PR #10).** Stage 5 — composite actions / macros,
-sub-project #1 (storage + cancellable runner) shipped: `app/macro_store.py`
-(SQLite behind a small interface), a `LaunchResult` refactor of `app/launcher.py`
-+ a best-effort `is_running` (and path-style AppID launching for desktop apps like
-JetBrains IDEs), `app/macros.py` (the cancellable run-loop with the idempotency
-hybrid: skip if `is_running` OR launched within a 120s recency window, biased to
-launch when unsure; supports per-app launch args like Chrome `--profile-directory`
-via `{"app":..., "args":[...]}` entries), and a thin `run_macro` client tool. This
-is the **first real consumer of the Stage 4 cancel token** — the run-loop polls
-`token.cancelled` between app launches and keeps `token.set_progress()` a speakable
-cumulative summary. 51 tests green; proven live via the Python path.
+**Backend feature-complete for the frontend pivot.** Robert's aim: finish the
+backend, then move entirely to frontend work.
 
-Sub-projects #2 (backend management API) and #3 (frontend macro UI) were
-**deliberately not pursued** — the project is parked here. The only step left for a
-full voice demo is the ElevenLabs dashboard wiring + mic acceptance for `run_macro`
-(config, not code; see the macro plan's Task 5).
+**PR #14 (in flight) — backend management API (Stage 5 #2).** Gives the frontend
+a full surface to consume: macro CRUD in a dedicated router (`app/macros_api.py`,
+`POST`=create/409, `PUT`=upsert, `DELETE`); memory `GET /jarvis/memories` now
+returns `[{id, content, created_at}]` plus `DELETE /jarvis/memories/{id}`;
+`DELETE /jarvis/conversations/{session_id}` (row + messages). New store fns:
+`macro_store.create_macro`/`delete_macro`, `memory_store.list_memories_detailed`/
+`delete_memory`, `conversation_store.delete_conversation`. `list_memories() ->
+list[str]` deliberately unchanged (the agent/voice prompt-injection path depends
+on it). 102 tests green; built subagent-driven TDD, whole-branch review clean.
 
-Stage 4 complete: the interruption spike (see `docs/voice-architecture.md`
-"Spike results") confirmed the ElevenLabs SDK does not cancel an in-flight client
-tool, so cancellation is LLM-driven — the agent calls a `cancel_action` client
-tool that flips a shared cancel token (`app/cancellation.py`), which long-running
-tools poll cooperatively between steps and report real partial progress. Verified
-live: "stop" mid-action halts the tool early and the agent truthfully reports how
-far it got.
+**PR #13 (merged) — wake word + voice memory.** Porcupine "jarvis" (`app/wake.py`)
+gates a reusable memory-aware `run_session()` in `app/voice.py` that bridges saved
+memories into the ElevenLabs session via `send_contextual_update`; shared
+`remember` tool across voice + text. **Open item (manual, Robert's machine):**
+live mic acceptance — Picovoice key in `.env`, declare a `remember` client tool on
+the EL agent, `python -m app.wake`. **Risk: pvrecorder getting the mic through
+WSL2 audio is unverified.**
 
-Stage 3 complete (PR #8): `open_app` executes on-device and its result
-round-trips back to the agent. Stage 2 complete (PR #6): ElevenLabs Agent runs
-with Claude as its LLM, voice loop works end-to-end via `app/voice.py`. Stage 1
-(/chat) complete, with multi-turn history via an in-memory SessionStore (PR #1).
+**PR #12 (merged) — action-capable web UI with memory.** `/chat` runs the
+`app/agent.py` Claude tool-use loop executing `open_app`/`run_macro`/
+`cancel_action`/`remember` server-side; SQLite `conversation_store` +
+`memory_store`; a vanilla type-or-talk web page (`app/static/`). **This shipped
+the long-deferred SessionStore → SQLite swap** (single-user, not multi-user).
 
-Stage 5 design note (built as `run_macro` / `app/macros.py`): the runner is a
-loop with poll points between steps (checks the cancel token between each app
-launch), records per-step progress, and skips already-satisfied apps via the
-idempotency hybrid so an interrupted-then-rerun macro doesn't double-launch. When
-a second concurrent cancellable action appears, the single-slot cancel token (one
-`_current`) becomes a `tool_call_id`-keyed registry — `app/cancellation.py`'s
-`begin()` prints a warning the moment that limit is exceeded.
+**PR #10 (merged) — Stage 5 #1 macros.** `app/macro_store.py` (SQLite behind a
+small interface), a `LaunchResult` refactor of `app/launcher.py` + best-effort
+`is_running` (and path-style AppID launching for desktop apps like JetBrains
+IDEs), `app/macros.py` (the cancellable run-loop with the idempotency hybrid:
+skip if `is_running` OR launched within a 120s recency window, biased to launch
+when unsure; per-app args like Chrome `--profile-directory` via `{"app":...,
+"args":[...]}` entries), and a thin `run_macro` client tool. **First real
+consumer of the Stage 4 cancel token** — polls `token.cancelled` between launches
+and keeps `token.set_progress()` a speakable cumulative summary.
 
-Known deferrals from Stage 1 (revisit when they bite):
-- SessionStore is in-memory only — history is lost on restart, not shared
-  across workers. Swap to SQLite behind the same interface when persistence
-  is needed. (Note: ElevenLabs now manages conversation history; this matters
-  only for the text /chat fallback or a custom-LLM proxy.) **This is now
-  scheduled work, not just a deferral — it's the storage layer for the Stage 8
-  user-facing app (per-user persisted session lists).**
+**Stage 4 (merged, PR #9) — cancellation.** The interruption spike (see
+`docs/voice-architecture.md` "Spike results") confirmed the EL SDK does not
+cancel an in-flight client tool, so cancellation is LLM-driven — the agent calls
+`cancel_action`, which flips a shared token (`app/cancellation.py`) that
+long-running tools poll cooperatively and report real partial progress. When a
+second concurrent cancellable action appears, the single-slot token (one
+`_current`) becomes a `tool_call_id`-keyed registry; `begin()` warns when that
+limit is exceeded. Verified live.
+
+**Stages 1–3 (merged):** Stage 3 (PR #8) `open_app` executes on-device, result
+round-trips back. Stage 2 (PR #6) EL Agent + Claude voice loop end-to-end. Stage
+1 (PR #1) `/chat` with multi-turn history (originally in-memory; now SQLite).
+
+**Deferrals still open:**
 - No conversation-history trimming; token cost grows per turn.
+- Observability / eval harness not built (see rigor-bar note).
 
 ## Conventions
 - Virtual env in .venv/
