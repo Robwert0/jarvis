@@ -30,6 +30,13 @@ def get_signed_url(settings: Settings = Depends(get_settings)) -> dict[str, str]
     return {"signed_url": res.json()["signed_url"]}
 
 
+@router.get("/voice/wake-config")
+def get_wake_config(settings: Settings = Depends(get_settings)) -> dict[str, str]:
+    if not settings.picovoice_access_key:
+        raise HTTPException(status_code=503, detail="Picovoice is not configured")
+    return {"access_key": settings.picovoice_access_key}
+
+
 @router.post("/tools/{name}")
 def execute_tool(name: str, params: dict[str, Any] | None = None) -> dict[str, str]:
     fn = DISPATCH.get(name)

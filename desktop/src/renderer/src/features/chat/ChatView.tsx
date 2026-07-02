@@ -8,6 +8,7 @@ import {
 } from '../../shared/api'
 import type { ActionView, ConversationSummary } from '../../shared/types'
 import { useVoice } from './useVoice'
+import { useWakeWord } from './useWakeWord'
 
 const VOICE_LABELS = {
   idle: '🎤 Voice',
@@ -52,6 +53,19 @@ function ChatView(): React.JSX.Element {
     },
     onError: (message) =>
       setItems((prev) => [...prev, { kind: 'message', role: 'error', content: message }])
+  })
+
+  const [wakeEnabled, setWakeEnabled] = useState(false)
+  useWakeWord({
+    enabled: wakeEnabled,
+    suspended: voice.status !== 'idle',
+    onWake: () => {
+      if (voice.status === 'idle') voice.toggle()
+    },
+    onError: (message) => {
+      setWakeEnabled(false)
+      setItems((prev) => [...prev, { kind: 'message', role: 'error', content: message }])
+    }
   })
 
   useEffect(() => {
@@ -156,6 +170,14 @@ function ChatView(): React.JSX.Element {
             placeholder="Message Jarvis…"
             autoFocus
           />
+          <button
+            type="button"
+            className={`voice ${wakeEnabled ? 'listening' : ''}`}
+            onClick={() => setWakeEnabled((on) => !on)}
+            title='Listen for "Jarvis"'
+          >
+            {wakeEnabled ? '👂 Wake on' : '👂 Wake'}
+          </button>
           <button
             type="button"
             className={`voice ${voice.status}`}

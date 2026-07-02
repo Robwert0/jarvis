@@ -7,7 +7,9 @@ function ConversationsPane(): React.JSX.Element {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    refresh()
+    listConversations()
+      .then(setConversations)
+      .catch((err) => setError(String(err)))
   }, [])
 
   async function refresh(): Promise<void> {

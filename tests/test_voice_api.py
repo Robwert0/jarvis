@@ -96,3 +96,18 @@ def test_execute_tool_empty_body(client, monkeypatch):
 def test_execute_tool_unknown_404(client):
     r = client.post("/jarvis/tools/nope", json={})
     assert r.status_code == 404
+
+
+def test_wake_config_unconfigured_503(client):
+    configure()
+    r = client.get("/jarvis/voice/wake-config")
+    assert r.status_code == 503
+
+
+def test_wake_config_ok(client):
+    app.dependency_overrides[get_settings] = lambda: Settings(
+        anthropic_api_key="test-key", picovoice_access_key="pv-key"
+    )
+    r = client.get("/jarvis/voice/wake-config")
+    assert r.status_code == 200
+    assert r.json() == {"access_key": "pv-key"}

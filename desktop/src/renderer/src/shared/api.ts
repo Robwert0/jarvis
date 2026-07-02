@@ -102,6 +102,10 @@ export function getVoiceSignedUrl(): Promise<{ signed_url: string }> {
   return request<{ signed_url: string }>('/jarvis/voice/signed-url')
 }
 
+export function getWakeConfig(): Promise<{ access_key: string }> {
+  return request<{ access_key: string }>('/jarvis/voice/wake-config')
+}
+
 export function executeTool(name: string, params: Record<string, unknown>): Promise<string> {
   return request<{ result: string }>(`/jarvis/tools/${name}`, {
     method: 'POST',

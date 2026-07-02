@@ -7,7 +7,9 @@ function MemoriesPane(): React.JSX.Element {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    refresh()
+    getMemories()
+      .then(setMemories)
+      .catch((err) => setError(String(err)))
   }, [])
 
   async function refresh(): Promise<void> {
