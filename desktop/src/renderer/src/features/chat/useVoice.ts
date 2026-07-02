@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { Conversation } from '@elevenlabs/client'
-import { executeTool, getVoiceSignedUrl } from '../../shared/api'
+import { executeTool, getMemories, getVoiceSignedUrl } from '../../shared/api'
 
 export type VoiceStatus = 'idle' | 'connecting' | 'listening' | 'speaking'
 
@@ -41,7 +41,10 @@ export function useVoice({ onMessage, onError }: UseVoiceOptions): {
     }
     setStatus('connecting')
     try {
-      const { signed_url } = await getVoiceSignedUrl()
+      const [{ signed_url }, memories] = await Promise.all([
+        getVoiceSignedUrl(),
+        getMemories().catch(() => [])
+      ])
       sessionRef.current = await Conversation.startSession({
         signedUrl: signed_url,
         clientTools,
@@ -59,6 +62,12 @@ export function useVoice({ onMessage, onError }: UseVoiceOptions): {
           onError(String(message))
         }
       })
+      if (memories.length) {
+        sessionRef.current.sendContextualUpdate(
+          "Here's what you should remember about the user:\n" +
+            memories.map((m) => `- ${m.content}`).join('\n')
+        )
+      }
       setStatus('listening')
     } catch (err) {
       sessionRef.current = null
