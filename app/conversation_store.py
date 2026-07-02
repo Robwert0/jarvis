@@ -42,6 +42,14 @@ def new_session():
     return sid
 
 
+def exists(session_id):
+    with _connect() as conn:
+        row = conn.execute(
+            "SELECT 1 FROM conversations WHERE id = ?", (session_id,)
+        ).fetchone()
+    return row is not None
+
+
 def append(session_id, role, content):
     now = _now()
     with _connect() as conn:

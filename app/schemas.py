@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -25,6 +27,15 @@ class ConversationSummary(BaseModel):
 class Message(BaseModel):
     role: str
     content: str
+
+
+class MessageCreate(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(..., min_length=1)
+
+
+class ConversationCreated(BaseModel):
+    session_id: str
 
 
 class ChatResponse(BaseModel):

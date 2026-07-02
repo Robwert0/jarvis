@@ -9,6 +9,7 @@ from app.agent import run_agent
 from app import conversation_store as store
 from app import macros_api
 from app import memory_store
+from app import voice_api
 from app import schemas
 
 app = FastAPI(title="Jarvis", version="0.1.0")
@@ -67,6 +68,22 @@ def list_conversations_endpoint() -> list[schemas.ConversationSummary]:
     return [schemas.ConversationSummary(**c) for c in store.list_conversations()]
 
 
+@router.post(
+    "/conversations", response_model=schemas.ConversationCreated, status_code=201
+)
+def create_conversation_endpoint() -> schemas.ConversationCreated:
+    return schemas.ConversationCreated(session_id=store.new_session())
+
+
+@router.post(
+    "/conversations/{session_id}/messages", status_code=204, response_model=None
+)
+def append_message_endpoint(session_id: str, body: schemas.MessageCreate) -> None:
+    if not store.exists(session_id):
+        raise HTTPException(status_code=404, detail="No such conversation")
+    store.append(session_id, body.role, body.content)
+
+
 @router.get("/conversations/{session_id}", response_model=list[schemas.Message])
 def get_conversation_endpoint(session_id: str) -> list[schemas.Message]:
     messages = store.get(session_id)
@@ -94,6 +111,7 @@ def delete_memory_endpoint(memory_id: int) -> None:
 
 app.include_router(router)
 app.include_router(macros_api.router)
+app.include_router(voice_api.router)
 
 app.mount(
     "/",

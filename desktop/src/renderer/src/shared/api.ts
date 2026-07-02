@@ -45,3 +45,29 @@ export function listConversations(): Promise<ConversationSummary[]> {
 export function getConversation(sessionId: string): Promise<Message[]> {
   return request<Message[]>(`/jarvis/conversations/${sessionId}`)
 }
+
+export function createConversation(): Promise<{ session_id: string }> {
+  return request<{ session_id: string }>('/jarvis/conversations', { method: 'POST' })
+}
+
+export function appendMessage(
+  sessionId: string,
+  role: 'user' | 'assistant',
+  content: string
+): Promise<void> {
+  return request<void>(`/jarvis/conversations/${sessionId}/messages`, {
+    method: 'POST',
+    body: JSON.stringify({ role, content })
+  })
+}
+
+export function getVoiceSignedUrl(): Promise<{ signed_url: string }> {
+  return request<{ signed_url: string }>('/jarvis/voice/signed-url')
+}
+
+export function executeTool(name: string, params: Record<string, unknown>): Promise<string> {
+  return request<{ result: string }>(`/jarvis/tools/${name}`, {
+    method: 'POST',
+    body: JSON.stringify(params)
+  }).then((r) => r.result)
+}

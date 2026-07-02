@@ -1,6 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
-import { getConversation, listConversations, sendChat } from '../../shared/api'
+import {
+  appendMessage,
+  createConversation,
+  getConversation,
+  listConversations,
+  sendChat
+} from '../../shared/api'
 import type { ActionView, ConversationSummary } from '../../shared/types'
+import { useVoice } from './useVoice'
+
+const VOICE_LABELS = {
+  idle: '🎤 Voice',
+  connecting: '… Connecting',
+  listening: '🟢 Listening',
+  speaking: '🔵 Speaking'
+} as const
 
 type TranscriptItem =
   { kind: 'message'; role: string; content: string } | { kind: 'actions'; actions: ActionView[] }
@@ -12,6 +26,33 @@ function ChatView(): React.JSX.Element {
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
   const transcriptRef = useRef<HTMLDivElement>(null)
+  const sessionIdRef = useRef<string | null>(null)
+  sessionIdRef.current = sessionId
+  const persistQueue = useRef(Promise.resolve())
+
+  function persistVoiceMessage(role: 'user' | 'assistant', content: string): void {
+    persistQueue.current = persistQueue.current
+      .then(async () => {
+        let sid = sessionIdRef.current
+        if (!sid) {
+          sid = (await createConversation()).session_id
+          sessionIdRef.current = sid
+          setSessionId(sid)
+        }
+        await appendMessage(sid, role, content)
+        refreshConversations()
+      })
+      .catch((err) => console.error('voice persist failed:', err))
+  }
+
+  const voice = useVoice({
+    onMessage: (role, content) => {
+      setItems((prev) => [...prev, { kind: 'message', role, content }])
+      persistVoiceMessage(role, content)
+    },
+    onError: (message) =>
+      setItems((prev) => [...prev, { kind: 'message', role: 'error', content: message }])
+  })
 
   useEffect(() => {
     refreshConversations()
@@ -115,6 +156,14 @@ function ChatView(): React.JSX.Element {
             placeholder="Message Jarvis…"
             autoFocus
           />
+          <button
+            type="button"
+            className={`voice ${voice.status}`}
+            onClick={voice.toggle}
+            disabled={voice.status === 'connecting'}
+          >
+            {VOICE_LABELS[voice.status]}
+          </button>
           <button type="submit" disabled={sending || !draft.trim()}>
             Send
           </button>

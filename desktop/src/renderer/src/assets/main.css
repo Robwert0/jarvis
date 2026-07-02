@@ -181,6 +181,21 @@ main {
   cursor: default;
 }
 
+.composer button.voice {
+  background: var(--bg-panel);
+  color: var(--text-dim);
+}
+
+.composer button.voice.listening {
+  background: #2d4b34;
+  color: var(--text);
+}
+
+.composer button.voice.speaking {
+  background: #2b3f5c;
+  color: var(--text);
+}
+
 .view {
   padding: 24px;
 }

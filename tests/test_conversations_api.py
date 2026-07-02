@@ -70,3 +70,46 @@ def test_delete_conversation(client: TestClient):
 
 def test_delete_conversation_unknown_404(client: TestClient):
     assert client.delete("/jarvis/conversations/nope").status_code == 404
+
+
+def test_create_conversation_201(client):
+    r = client.post("/jarvis/conversations")
+    assert r.status_code == 201
+    assert r.json()["session_id"]
+
+
+def test_append_message_and_read_back(client):
+    sid = client.post("/jarvis/conversations").json()["session_id"]
+    r = client.post(
+        f"/jarvis/conversations/{sid}/messages",
+        json={"role": "user", "content": "hello from voice"},
+    )
+    assert r.status_code == 204
+    client.post(
+        f"/jarvis/conversations/{sid}/messages",
+        json={"role": "assistant", "content": "hi Robert"},
+    )
+    assert client.get(f"/jarvis/conversations/{sid}").json() == [
+        {"role": "user", "content": "hello from voice"},
+        {"role": "assistant", "content": "hi Robert"},
+    ]
+    convs = client.get("/jarvis/conversations").json()
+    assert convs[0]["id"] == sid
+    assert convs[0]["title"] == "hello from voice"
+
+
+def test_append_message_unknown_conversation_404(client):
+    r = client.post(
+        "/jarvis/conversations/nope/messages",
+        json={"role": "user", "content": "hi"},
+    )
+    assert r.status_code == 404
+
+
+def test_append_message_invalid_role_422(client):
+    sid = client.post("/jarvis/conversations").json()["session_id"]
+    r = client.post(
+        f"/jarvis/conversations/{sid}/messages",
+        json={"role": "tool", "content": "hi"},
+    )
+    assert r.status_code == 422
