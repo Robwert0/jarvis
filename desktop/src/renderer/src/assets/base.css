@@ -1,0 +1,21 @@
+:root {
+  --bg: #1e1f22;
+  --bg-panel: #2b2d31;
+  --bg-hover: #35373c;
+  --text: #dbdee1;
+  --text-dim: #949ba4;
+  --accent: #5865f2;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+}

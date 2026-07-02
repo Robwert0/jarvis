@@ -1,5 +1,6 @@
 import anthropic
 from fastapi import FastAPI, Depends, HTTPException, APIRouter
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 
@@ -11,6 +12,17 @@ from app import memory_store
 from app import schemas
 
 app = FastAPI(title="Jarvis", version="0.1.0")
+
+# The desktop app (Electron) calls this API from another origin: the Vite dev
+# server in development, file:// when packaged. Single-user API bound to
+# localhost, so any-origin is acceptable.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 router = APIRouter(prefix="/jarvis")
 
 
