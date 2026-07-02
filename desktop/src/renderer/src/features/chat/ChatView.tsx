@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { getConversation, listConversations, sendChat } from '../../shared/api'
 import type { ActionView, ConversationSummary } from '../../shared/types'
+import { useVoice } from './useVoice'
+
+const VOICE_LABELS = {
+  idle: '🎤 Voice',
+  connecting: '… Connecting',
+  listening: '🟢 Listening',
+  speaking: '🔵 Speaking'
+} as const
 
 type TranscriptItem =
   { kind: 'message'; role: string; content: string } | { kind: 'actions'; actions: ActionView[] }
@@ -12,6 +20,11 @@ function ChatView(): React.JSX.Element {
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
   const transcriptRef = useRef<HTMLDivElement>(null)
+  const voice = useVoice({
+    onMessage: (role, content) => setItems((prev) => [...prev, { kind: 'message', role, content }]),
+    onError: (message) =>
+      setItems((prev) => [...prev, { kind: 'message', role: 'error', content: message }])
+  })
 
   useEffect(() => {
     refreshConversations()
@@ -115,6 +128,14 @@ function ChatView(): React.JSX.Element {
             placeholder="Message Jarvis…"
             autoFocus
           />
+          <button
+            type="button"
+            className={`voice ${voice.status}`}
+            onClick={voice.toggle}
+            disabled={voice.status === 'connecting'}
+          >
+            {VOICE_LABELS[voice.status]}
+          </button>
           <button type="submit" disabled={sending || !draft.trim()}>
             Send
           </button>

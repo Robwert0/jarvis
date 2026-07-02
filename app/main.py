@@ -9,6 +9,7 @@ from app.agent import run_agent
 from app import conversation_store as store
 from app import macros_api
 from app import memory_store
+from app import voice_api
 from app import schemas
 
 app = FastAPI(title="Jarvis", version="0.1.0")
@@ -94,6 +95,7 @@ def delete_memory_endpoint(memory_id: int) -> None:
 
 app.include_router(router)
 app.include_router(macros_api.router)
+app.include_router(voice_api.router)
 
 app.mount(
     "/",
