@@ -38,6 +38,14 @@ export function getMemories(): Promise<MemoryView[]> {
   return request<MemoryView[]>('/jarvis/memories')
 }
 
+export function deleteMemory(id: number): Promise<void> {
+  return request<void>(`/jarvis/memories/${id}`, { method: 'DELETE' })
+}
+
+export function deleteConversation(sessionId: string): Promise<void> {
+  return request<void>(`/jarvis/conversations/${sessionId}`, { method: 'DELETE' })
+}
+
 export function sendChat(message: string, sessionId: string | null): Promise<ChatResponse> {
   return request<ChatResponse>('/jarvis/chat', {
     method: 'POST',
