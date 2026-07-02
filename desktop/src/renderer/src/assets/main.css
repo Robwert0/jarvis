@@ -209,3 +209,93 @@ main {
   color: var(--text-dim);
   font-size: 14px;
 }
+
+.view h2 {
+  font-size: 15px;
+  margin: 20px 0 10px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.macro-list {
+  list-style: none;
+  max-width: 640px;
+}
+
+.macro {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--bg-panel);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+
+.macro-info pre {
+  font-family: inherit;
+  color: var(--text-dim);
+  font-size: 13px;
+  margin-top: 4px;
+  white-space: pre-wrap;
+}
+
+.macro-actions {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.macro-actions button,
+.editor-actions button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  background: var(--bg-hover);
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.macro-actions button.danger {
+  background: #5c2b29;
+}
+
+.editor-actions button[type='submit'] {
+  background: var(--accent);
+}
+
+.macro-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 640px;
+  flex: 1;
+}
+
+.macro-editor input,
+.macro-editor textarea {
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+}
+
+.macro-editor input:disabled {
+  opacity: 0.6;
+}
+
+.editor-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.form-error {
+  color: #e88;
+  font-size: 13px;
+}

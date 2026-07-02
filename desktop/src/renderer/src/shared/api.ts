@@ -1,4 +1,11 @@
-import type { ChatResponse, ConversationSummary, MemoryView, Message } from './types'
+import type {
+  ChatResponse,
+  ConversationSummary,
+  MacroAppEntry,
+  MacroView,
+  MemoryView,
+  Message
+} from './types'
 
 const BASE_URL = 'http://localhost:8000'
 
@@ -59,6 +66,28 @@ export function appendMessage(
     method: 'POST',
     body: JSON.stringify({ role, content })
   })
+}
+
+export function listMacros(): Promise<MacroView[]> {
+  return request<MacroView[]>('/jarvis/macros')
+}
+
+export function createMacro(name: string, apps: MacroAppEntry[]): Promise<MacroView> {
+  return request<MacroView>('/jarvis/macros', {
+    method: 'POST',
+    body: JSON.stringify({ name, apps })
+  })
+}
+
+export function updateMacro(name: string, apps: MacroAppEntry[]): Promise<MacroView> {
+  return request<MacroView>(`/jarvis/macros/${name}`, {
+    method: 'PUT',
+    body: JSON.stringify({ apps })
+  })
+}
+
+export function deleteMacro(name: string): Promise<void> {
+  return request<void>(`/jarvis/macros/${name}`, { method: 'DELETE' })
 }
 
 export function getVoiceSignedUrl(): Promise<{ signed_url: string }> {
