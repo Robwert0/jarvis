@@ -1,4 +1,4 @@
-import type { MemoryView } from './types'
+import type { ChatResponse, ConversationSummary, MemoryView, Message } from './types'
 
 const BASE_URL = 'http://localhost:8000'
 
@@ -29,4 +29,19 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export function getMemories(): Promise<MemoryView[]> {
   return request<MemoryView[]>('/jarvis/memories')
+}
+
+export function sendChat(message: string, sessionId: string | null): Promise<ChatResponse> {
+  return request<ChatResponse>('/jarvis/chat', {
+    method: 'POST',
+    body: JSON.stringify({ message, session_id: sessionId })
+  })
+}
+
+export function listConversations(): Promise<ConversationSummary[]> {
+  return request<ConversationSummary[]>('/jarvis/conversations')
+}
+
+export function getConversation(sessionId: string): Promise<Message[]> {
+  return request<Message[]>(`/jarvis/conversations/${sessionId}`)
 }
