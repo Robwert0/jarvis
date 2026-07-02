@@ -46,6 +46,21 @@ export function getConversation(sessionId: string): Promise<Message[]> {
   return request<Message[]>(`/jarvis/conversations/${sessionId}`)
 }
 
+export function createConversation(): Promise<{ session_id: string }> {
+  return request<{ session_id: string }>('/jarvis/conversations', { method: 'POST' })
+}
+
+export function appendMessage(
+  sessionId: string,
+  role: 'user' | 'assistant',
+  content: string
+): Promise<void> {
+  return request<void>(`/jarvis/conversations/${sessionId}/messages`, {
+    method: 'POST',
+    body: JSON.stringify({ role, content })
+  })
+}
+
 export function getVoiceSignedUrl(): Promise<{ signed_url: string }> {
   return request<{ signed_url: string }>('/jarvis/voice/signed-url')
 }

@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { getConversation, listConversations, sendChat } from '../../shared/api'
+import {
+  appendMessage,
+  createConversation,
+  getConversation,
+  listConversations,
+  sendChat
+} from '../../shared/api'
 import type { ActionView, ConversationSummary } from '../../shared/types'
 import { useVoice } from './useVoice'
 
@@ -20,8 +26,30 @@ function ChatView(): React.JSX.Element {
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
   const transcriptRef = useRef<HTMLDivElement>(null)
+  const sessionIdRef = useRef<string | null>(null)
+  sessionIdRef.current = sessionId
+  const persistQueue = useRef(Promise.resolve())
+
+  function persistVoiceMessage(role: 'user' | 'assistant', content: string): void {
+    persistQueue.current = persistQueue.current
+      .then(async () => {
+        let sid = sessionIdRef.current
+        if (!sid) {
+          sid = (await createConversation()).session_id
+          sessionIdRef.current = sid
+          setSessionId(sid)
+        }
+        await appendMessage(sid, role, content)
+        refreshConversations()
+      })
+      .catch((err) => console.error('voice persist failed:', err))
+  }
+
   const voice = useVoice({
-    onMessage: (role, content) => setItems((prev) => [...prev, { kind: 'message', role, content }]),
+    onMessage: (role, content) => {
+      setItems((prev) => [...prev, { kind: 'message', role, content }])
+      persistVoiceMessage(role, content)
+    },
     onError: (message) =>
       setItems((prev) => [...prev, { kind: 'message', role: 'error', content: message }])
   })
