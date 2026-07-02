@@ -1,16 +1,14 @@
 # Jarvis Project Context
 
-## Status — active; single-user local assistant (2026-07-01)
-**Direction change (was: "parked at Stage 5 #1").** Jarvis is being built out as a
-**single-user, local desktop personal assistant** — a real tool to actually use,
-not a multi-user portfolio app. **Built and shipped to `main`:** Stages 1–5 #1,
-an action-capable **web UI with memory** (PR #12), **Porcupine wake word**
-(PR #13), the backend **management API** (PR #14, Stage 5 #2), and **Stage 6
-tools** — `search_web` + `control_system` (PR #16). **Dropped by explicit
-decision:** Stage 8's multi-user app, auth/authz, and security hardening (see the
-rigor-bar note below). **Next track is the frontend management UI (Stage 5 #3)** —
-the last real feature track; everything else left is verification or optional
-(see Current stage). Read the roadmap as history + intent, not inventory.
+## Status — COMPLETE for daily use (2026-07-02, Robert: "this is the end of app")
+Jarvis is a **single-user, local desktop personal assistant** — a real tool in
+actual use, not a multi-user portfolio app. **Everything is shipped to `main`:**
+Stages 1–7 plus the 2026-07-02 **desktop-app pivot** — the frontend is an
+**Electron + React + TypeScript app** in `desktop/` (PR #18 chat, PR #19 voice
+with memory bridge, PR #20 macro management UI). **Dropped by explicit
+decision:** Stage 8's multi-user app, auth/authz, and security hardening (see
+the rigor-bar note below). Anything listed as open below is an optional
+resume-point, not planned work. Read the roadmap as history, not inventory.
 
 ## Goal
 Personal AI assistant inspired by Iron Man's Jarvis: voice interaction,
@@ -18,15 +16,23 @@ computer control, smart home integration. Scoped to **single-user, local** —
 runs on Robert's machine, no accounts.
 
 ## Stack
-- Backend: FastAPI (Python 3.12)
-- Frontend: vanilla HTML/CSS/JS in `app/static/` (type-or-talk page, Web Speech
-  API for browser speech). Kept minimal-but-working on purpose.
+- Backend: FastAPI (Python 3.12) with CORS (the desktop renderer is another origin)
+- Frontend: **Electron + React + TypeScript desktop app** in `desktop/`
+  (electron-vite; `src/main` window/permissions, `src/preload`, `src/renderer`
+  with `features/chat`, `features/manage`, `shared/api.ts` typed against
+  `app/schemas.py`). The old vanilla page in `app/static/` remains as fallback.
 - LLM: Claude (Anthropic). Two paths: the **ElevenLabs Agent's LLM** for the
   voice loop, and a **server-side Claude tool-use loop** (`app/agent.py`) behind
   the `/chat` web path.
-- Voice loop (STT + TTS + turn-taking + barge-in + AEC): ElevenLabs Agents
+- Voice loop (STT + TTS + turn-taking + barge-in + AEC): ElevenLabs Agents —
+  **in the desktop app** via `@elevenlabs/client` in the renderer (signed URL
+  minted by `GET /jarvis/voice/signed-url`; client tools forwarded to
+  `POST /jarvis/tools/{name}` so execution stays in the Python process), and
+  headless via `python -m app.voice`.
 - Local actions: client tools executed on-device (`open_app`, `run_macro`,
-  `cancel_action`, `remember`) — shared between the voice and text paths
+  `cancel_action`, `remember`, `search_web`, `control_system`) — shared between
+  the voice and text paths. **They must be declared as client tools on the EL
+  dashboard** (wait-for-response on, timeout raised) or the agent never calls them.
 - Wake word: **Porcupine "jarvis"** (`app/wake.py`) — built (PR #13); gates the
   ElevenLabs session so nothing runs/costs while idle
 - Storage: **SQLite in use** — `jarvis.db` (conversations, messages, memories),
@@ -49,19 +55,21 @@ superseded.
 4. Interruption-vs-in-flight-action spike + cancellation — **done** (PR #9);
    SDK won't cancel in-flight tools, so cancellation is LLM-driven via a
    `cancel_action` tool + cooperative cancel token.
-5. Composite actions / macros — **#1 storage + cancellable runner done** (PR #10,
-   `run_macro`); **#2 backend management API done** (PR #14); **#3 frontend
-   macro-management UI is the next track.**
+5. Composite actions / macros — **all done**: #1 storage + cancellable runner
+   (PR #10, `run_macro`); #2 backend management API (PR #14); #3 macro-management
+   UI in the desktop app (PR #20).
 6. More tools — **`search_web` (Tavily) + `control_system` (volume/media/lock/
    sleep) done** (PR #16). Smart home / other integrations not built (optional
    breadth).
-7. Wake word activation — **done** (PR #13, Porcupine); pending live mic
-   acceptance on Robert's machine (see Current stage).
+7. Wake word activation — **done** (PR #13, Porcupine, headless path). Mic
+   capture through WSLg was proven working by the desktop voice path (PR #19).
 8. ~~User-facing multi-user app~~ — **DROPPED.** Superseded by the single-user
    local direction. The useful parts (type-or-talk UI, SQLite persistence)
    landed single-user in PR #12; the multi-user / hosted-demo / per-user-auth
    ambition is not being pursued.
-9. UI polish — deferred (of the single-user web UI).
+9. UI — **superseded by the desktop app track (2026-07-02):** PR #18 Electron +
+   React + TS scaffold with working chat; PR #19 in-app ElevenLabs voice with
+   persisted transcripts + memory bridge; PR #20 macro management UI.
 
 ### Engineering-rigor bar — revised after the single-user pivot
 Original framing targeted a **backend engineer who can also build AI**, with
@@ -92,13 +100,42 @@ Companion project (own brainstorm, parked): a CV site with an AI chatbot over
 **RAG** — the self-demonstrating front door.
 
 ## Current stage
-**Backend feature-complete.** The only real feature track left is the **frontend
-management UI (Stage 5 #3)** — a page to edit macros, prune memories, and delete
-conversations against the management API. Everything else outstanding is either
-**verification** (wake-word mic + `control_system` WSL→Windows interop, both
-manual on Robert's machine), **optional** (Sub-project B packaging as a
-tray/autostart app; smart-home tools), or **deliberately deferred** (observability,
-eval harness — see rigor-bar note).
+**Complete for daily use (2026-07-02).** The desktop app shipped (PRs #18–#20)
+and Robert declared the build done. To run: `uvicorn app.main:app --port 8000`
++ `cd desktop && npm run dev`. Fresh WSL needs `apt-get install libnss3 libnspr4`
+for Electron.
+
+**Optional resume-points (not planned):** Memories/Conversations panes in the
+Manage view (macros pane exists; API is ready); in-app wake word (Porcupine
+Web/WASM triggering `useVoice.toggle()`); tray/autostart + electron-builder
+Windows packaging; retiring `app/static/`; smart-home tools; conversation-history
+trimming; observability / eval harness (deliberately deferred, see rigor bar).
+
+**PR #20 (merged) — macro management UI.** Manage view: list/create/inline-edit/
+delete macros against the PR #14 API. Apps edited as text, one entry per line —
+extra tokens become `{app, args}`, single tokens stay strings (`macroText.ts`
+converts both ways). 409/validation errors surface inline via the typed
+`ApiError`.
+
+**PR #19 (merged) — in-app voice.** ElevenLabs Conversational AI in the renderer
+(`@elevenlabs/client`, `useVoice` hook; idle/connecting/listening/speaking button
+states). Backend: `GET /jarvis/voice/signed-url` (EL API key never reaches the
+renderer; 503 unconfigured / 502 upstream), `POST /jarvis/tools/{name}` (dispatches
+to `agent.DISPATCH` — tool execution stays in the Python process, cancel-token
+semantics intact), `POST /jarvis/conversations` + `POST /jarvis/conversations/
+{id}/messages` (voice transcripts persist like text chats; ordered client-side
+queue, lazy conversation creation). Memories bridged into each session via
+`sendContextualUpdate` (same format as `app/voice.py`). **Verified live in WSLg —
+including the mic.** Hard-won lessons: AudioWorklets are governed by `script-src`
+(needs `blob:`), not `worker-src`; CORS preflights fail without middleware; and
+the EL agent silently *pretends* to remember if the client tools aren't declared
+on the dashboard.
+
+**PR #18 (merged) — desktop app + chat.** electron-vite react-ts scaffold in
+`desktop/`; chat view with conversation rail, transcript, action chips, composer;
+`shared/api.ts` typed fetch wrapper decoding the `{"detail": ...}` envelope into
+`ApiError`; `shared/types.ts` mirrors `app/schemas.py`. Backend gained
+CORSMiddleware (renderer origin is `:5173` in dev / `file://` packaged).
 
 **PR #16 (merged) — Stage 6 tools.** `search_web` (Tavily, `app/web_search.py`)
 and `control_system` (`app/system_control.py`: volume/media/lock/sleep run from
@@ -166,3 +203,5 @@ round-trips back. Stage 2 (PR #6) EL Agent + Claude voice loop end-to-end. Stage
 - CI (.github/workflows/ci.yml) runs pytest on PRs to main; main is
   protected and requires the `test` check to pass before merge
 - Merge style: squash (one commit per PR on main)
+- Desktop checks (run inside `desktop/`): `npm run typecheck` + `npm run lint`
+  (not in CI); no JS test harness by choice
